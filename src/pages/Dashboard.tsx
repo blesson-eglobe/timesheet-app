@@ -167,7 +167,7 @@ const EmployeeDashboard: React.FC = () => {
 		);
 	}
 
-	const myProjects = (data.projects || []).slice(0, 5);
+	const myProjects = (data.projects || []).slice(0, 3);
 	const weekHours = data.weekHours || [];
 	const todayHours = data.todayHours || 0;
 	const weekTotal =
@@ -556,7 +556,7 @@ const ManagerDashboard: React.FC = () => {
 	const monthlyHours = data.monthlyHours || [];
 	const deptUtilization = data.deptUtilization || [];
 	const employeeTable = data.employeeTable || [];
-	const myProjects = data.projects || [];
+	const myProjects = (data.projects || []).slice(0, 3);
 
 	const handleBulkApproveAll = () => {
 		const pendingIds = approvals
@@ -1135,7 +1135,7 @@ const CEODashboard: React.FC = () => {
 
 	const deptUtilization = data.deptUtilization || [];
 	const employeeTable = data.employeeTable || [];
-	const myProjects = data.projects || [];
+	const myProjects = (data.projects || []).slice(0, 3);
 	const totalTimesheets = approvals.length;
 	const pendingTimesheets = approvals.filter(
 		(a: any) => a.status === "Pending",
@@ -1349,7 +1349,7 @@ const CEODashboard: React.FC = () => {
 							</span>
 						</div>
 						<div style={{ display: "flex", flexDirection: "column" }}>
-							{myProjects.slice(0, 5).map((p: any) => (
+							{myProjects.slice(0, 3).map((p: any) => (
 								<div
 									className="dashboard__project-item"
 									key={p.id}
@@ -1879,7 +1879,7 @@ const AdminDashboard: React.FC = () => {
 	}
 
 	const employeeTable = data.employeeTable || [];
-	const myProjects = data.projects || [];
+	const myProjects = (data.projects || []).slice(0, 3);
 	const totalTimesheets = approvals.length;
 
 	const systemAuditLogs = [
