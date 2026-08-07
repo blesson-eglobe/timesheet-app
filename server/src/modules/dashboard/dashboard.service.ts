@@ -1,5 +1,37 @@
 import { query } from "../../config/db";
 
+const formatDashboardProject = (p: Record<string, unknown>) => {
+	const totalHours = Number(p["estimated_hours"]) || 0;
+	const loggedHours =
+		Number(
+			p["actual_logged_hours"] !== undefined
+				? p["actual_logged_hours"]
+				: p["logged_hours"]
+		) || 0;
+	const rawProgress = totalHours > 0 ? (loggedHours / totalHours) * 100 : 0;
+	const progress =
+		rawProgress > 0 && rawProgress < 1
+			? Math.round(rawProgress * 10) / 10
+			: Math.min(100, Math.round(rawProgress));
+
+	return {
+		id: p["id"],
+		name: p["name"],
+		status: p["status"],
+		priority: p["priority"],
+		progress,
+		totalHours,
+		loggedHours,
+		dueDate: p["end_date"]
+			? new Date(p["end_date"] as string).toLocaleDateString("en-US", {
+					month: "short",
+					day: "numeric",
+					year: "numeric",
+				})
+			: "",
+	};
+};
+
 export const dashboardService = {
 	async employee(userId: string) {
 		const today = new Date().toISOString().slice(0, 10);
@@ -44,9 +76,10 @@ export const dashboardService = {
 
 		// Assigned projects (strictly projects where user is in project_members)
 		const projectsRes = await query(
-			`SELECT p.id, p.name, p.status, p.priority, p.progress, p.estimated_hours, p.logged_hours, p.end_date
+			`SELECT p.id, p.name, p.status, p.priority, p.progress, p.estimated_hours, p.logged_hours, p.end_date,
+              COALESCE((SELECT SUM(wl.hours) FROM work_logs wl WHERE wl.project_id = p.id), 0) AS actual_logged_hours
        FROM projects p JOIN project_members pm ON pm.project_id = p.id
-       WHERE pm.user_id = $1 ORDER BY p.updated_at DESC LIMIT 5`,
+       WHERE pm.user_id = $1 ORDER BY p.updated_at DESC LIMIT 3`,
 			[userId],
 		);
 
@@ -63,22 +96,7 @@ export const dashboardService = {
 			weekTotal,
 			weekHours,
 			activeProjects: projectsRes.rows.length,
-			projects: projectsRes.rows.map((p: Record<string, unknown>) => ({
-				id: p["id"],
-				name: p["name"],
-				status: p["status"],
-				priority: p["priority"],
-				progress: Number(p["progress"]),
-				totalHours: Number(p["estimated_hours"]),
-				loggedHours: Number(p["logged_hours"]),
-				dueDate: p["end_date"]
-					? new Date(p["end_date"] as string).toLocaleDateString("en-US", {
-							month: "short",
-							day: "numeric",
-							year: "numeric",
-						})
-					: "",
-			})),
+			projects: (projectsRes.rows as Record<string, unknown>[]).map(formatDashboardProject),
 			recentActivity: activityRes.rows.map((r: Record<string, unknown>) => ({
 				id: r["id"],
 				userInitials: r["initials"],
@@ -158,9 +176,10 @@ export const dashboardService = {
 
 		// Assigned projects (Manager's own projects or all for Admin)
 		const projectsRes = await query(
-			`SELECT p.id, p.name, p.status, p.priority, p.progress, p.estimated_hours, p.logged_hours, p.end_date
+			`SELECT p.id, p.name, p.status, p.priority, p.progress, p.estimated_hours, p.logged_hours, p.end_date,
+              COALESCE((SELECT SUM(wl.hours) FROM work_logs wl WHERE wl.project_id = p.id), 0) AS actual_logged_hours
        FROM projects p ${userRole === 'admin' ? "" : "JOIN project_members pm ON pm.project_id = p.id"}
-       WHERE 1=1 ${userRole === 'admin' ? "" : "AND pm.user_id = $1"} ORDER BY p.updated_at DESC LIMIT 5`,
+       WHERE 1=1 ${userRole === 'admin' ? "" : "AND pm.user_id = $1"} ORDER BY p.updated_at DESC LIMIT 3`,
 			userRole === 'admin' ? [] : [managerId],
 		);
 
@@ -207,22 +226,7 @@ export const dashboardService = {
 				hours: Number(r["hours"]),
 			})),
 			deptUtilization: deptUtil,
-			projects: (projectsRes.rows as Record<string, unknown>[]).map((p) => ({
-				id: p["id"],
-				name: p["name"],
-				status: p["status"],
-				priority: p["priority"],
-				progress: Number(p["progress"]),
-				totalHours: Number(p["estimated_hours"]),
-				loggedHours: Number(p["logged_hours"]),
-				dueDate: p["end_date"]
-					? new Date(p["end_date"] as string).toLocaleDateString("en-US", {
-							month: "short",
-							day: "numeric",
-							year: "numeric",
-						})
-					: "",
-			})),
+			projects: (projectsRes.rows as Record<string, unknown>[]).map(formatDashboardProject),
 			employeeTable: (empRes.rows as Record<string, unknown>[]).map((u) => ({
 				user: {
 					id: u["id"],

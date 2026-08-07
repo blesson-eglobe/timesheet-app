@@ -420,7 +420,6 @@ export const WorkLogs: React.FC = () => {
                   {/* Project (Second Column) */}
                   <div className="wl-panel__col wl-panel__col--project">
                     <div className="wl-panel__project-meta">
-                      <span className="wl-panel__proj-dot" style={{ background: color }} />
                       <span className="wl-panel__proj-name">{log.projectName || 'General'}</span>
                     </div>
                   </div>
@@ -565,10 +564,6 @@ export const WorkLogs: React.FC = () => {
                   <tr key={p.id} className="worklogs__grid-row">
                     <td className="worklogs__grid-td worklogs__grid-td--proj">
                       <div className="worklogs__grid-proj-info">
-                        <span
-                          className="worklogs__grid-proj-dot"
-                          style={{ backgroundColor: projColor(p.name) }}
-                        />
                         <span
                           className="worklogs__grid-proj-name"
                           onClick={() => navigate(`/projects/${p.id}`)}
