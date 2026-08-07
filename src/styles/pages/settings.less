@@ -1,0 +1,435 @@
+@import "../variables.less";
+@import "../mixins.less";
+
+.settings {
+	max-width: 640px;
+
+	&__section {
+		.card-base();
+		padding: @space-6;
+		margin-bottom: @space-5;
+
+		&-title {
+			font-size: @font-size-lg;
+			font-weight: 600;
+			margin-bottom: @space-1;
+		}
+		&-desc {
+			font-size: @font-size-sm;
+			color: @color-text-secondary;
+			margin-bottom: @space-5;
+		}
+		&-divider {
+			height: 1px;
+			background: @color-border;
+			margin: @space-5 0;
+		}
+	}
+
+	&__avatar-row {
+		.flex-center();
+		gap: 10px;
+		margin-bottom: @space-5;
+	}
+	&__avatar-wrapper {
+		position: relative;
+		cursor: pointer;
+	}
+	&__user-name {
+		font-weight: 600;
+		font-size: 15px;
+		color: #0f172a;
+		margin-bottom: 3px;
+	}
+	&__avatar-actions {
+		.flex-center();
+		gap: 12px;
+	}
+	&__avatar-change {
+		background: none;
+		border: none;
+		padding: 0;
+		font-size: 13px;
+		font-weight: 600;
+		color: @blue-600;
+		cursor: pointer;
+		&:hover {
+			text-decoration: underline;
+		}
+	}
+	&__avatar-remove {
+		background: none;
+		border: none;
+		padding: 0;
+		font-size: 13px;
+		font-weight: 500;
+		color: @red-500;
+		cursor: pointer;
+		&:hover {
+			text-decoration: underline;
+		}
+	}
+	&__file-input {
+		display: none;
+	}
+	&__upload-msg {
+		margin-top: 8px;
+		font-size: 12px;
+		font-weight: 500;
+
+		&--success {
+			color: #16a34a;
+		}
+		&--error {
+			color: #dc2626;
+		}
+	}
+	&__input-readonly {
+		background: #f9fafb;
+		color: #6b7280;
+	}
+	&__signout-btn {
+		.flex-center();
+		gap: 8px;
+	}
+
+	&__form-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: @space-4;
+	}
+
+	// Toggle
+	&__toggle-row {
+		.flex-between();
+		padding: @space-3 0;
+		border-bottom: 1px solid @color-border;
+		&:last-child {
+			border-bottom: none;
+		}
+	}
+	&__toggle-info {
+		.flex-col();
+		gap: 2px;
+	}
+	&__toggle-label {
+		font-size: @font-size-base;
+		font-weight: 500;
+	}
+	&__toggle-desc {
+		font-size: @font-size-sm;
+		color: @color-text-secondary;
+	}
+
+	&__toggle {
+		position: relative;
+		width: 40px;
+		height: 22px;
+		flex-shrink: 0;
+		cursor: pointer;
+
+		input {
+			opacity: 0;
+			width: 0;
+			height: 0;
+			position: absolute;
+		}
+
+		&-track {
+			position: absolute;
+			inset: 0;
+			background: @gray-300;
+			border-radius: @radius-full;
+			cursor: pointer;
+			transition: background 0.18s;
+		}
+
+		&-thumb {
+			position: absolute;
+			width: 16px;
+			height: 16px;
+			border-radius: @radius-full;
+			background: @white;
+			top: 3px;
+			left: 3px;
+			transition: transform 0.18s;
+			box-shadow: @shadow-xs;
+		}
+
+		input:checked ~ &-track {
+			background: @gray-900;
+		}
+		input:checked ~ &-track &-thumb {
+			transform: translateX(18px);
+		}
+	}
+
+	&__danger-zone {
+		border: 1px solid @red-200;
+		border-radius: @radius-xl;
+		padding: @space-5;
+	}
+	&__danger-title {
+		font-size: @font-size-md;
+		font-weight: 600;
+		color: @red-600;
+		margin-bottom: @space-1;
+	}
+	&__danger-desc {
+		font-size: @font-size-sm;
+		color: @color-text-secondary;
+		margin-bottom: @space-4;
+	}
+
+	// ─── About section ───────────────────────────────────────────────────────
+	&__section--about {
+		// Slightly quieter than regular sections
+		.settings__section-title {
+			color: @color-text-secondary;
+			font-size: @font-size-base;
+			font-weight: 600;
+		}
+		.settings__section-desc {
+			margin-bottom: @space-2;
+		}
+	}
+
+	&__about-meta {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		font-size: @font-size-sm;
+		color: @color-text-muted;
+		margin-bottom: @space-4;
+	}
+
+	&__about-dot {
+		color: @gray-300;
+	}
+
+	&__about-hint {
+		display: inline-flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 8px;
+		font-size: @font-size-sm;
+		color: @color-text-muted;
+		font-style: italic;
+		padding: 8px 12px;
+		background: @gray-50;
+		border: 1px solid @color-border;
+		border-radius: @radius-md;
+		user-select: none;
+
+		svg {
+			flex-shrink: 0;
+			opacity: 0.5;
+		}
+	}
+
+	// Row of 8 letter tiles
+	&__about-tiles {
+		display: inline-flex;
+		align-items: center;
+		gap: 3px;
+	}
+
+	&__about-tile {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 20px;
+		height: 22px;
+		border-radius: 4px;
+		border: 1px solid @gray-300;
+		background: @white;
+		font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+		font-size: 11px;
+		font-weight: 600;
+		font-style: normal;
+		color: @gray-300;
+		transition:
+			background 0.15s ease,
+			border-color 0.15s ease,
+			color 0.15s ease,
+			transform 0.12s ease;
+
+		&--active {
+			background: @gray-900;
+			border-color: @gray-900;
+			color: @white;
+			transform: translateY(-2px);
+		}
+	}
+
+	// "The Rundown" label after the tiles
+	&__about-hint-label {
+		font-size: 10px;
+		font-weight: 600;
+		font-style: normal;
+		letter-spacing: 0.3px;
+		color: @color-text-muted;
+		background: @gray-100;
+		border: 1px solid @color-border;
+		border-radius: @radius-full;
+		padding: 2px 8px;
+	}
+
+	// Remove old blur-reveal (no longer used)
+	&__about-secret { display: none; }
+}
+
+@media (max-width: 640px) {
+	.settings {
+		max-width: 100%;
+		&__form-grid {
+			grid-template-columns: 1fr;
+		}
+		&__toggle-row {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: @space-3;
+		}
+		&__avatar-row {
+			flex-direction: column;
+			align-items: flex-start;
+		}
+	}
+}
+
+// ─── About footer ─────────────────────────────────────────────────────────────
+.settings__about-footer {
+	max-width: 640px;
+	padding: @space-5 0 @space-8;
+	display: flex;
+	flex-direction: column;
+	gap: @space-3;
+
+	&-top {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+	&-version {
+		font-size: @font-size-sm;
+		color: @color-text-muted;
+	}
+
+	&-label {
+		font-size: 10px;
+		font-weight: 600;
+		letter-spacing: 0.5px;
+		color: @color-text-muted;
+		text-transform: uppercase;
+	}
+}
+
+.settings__about-toggle {
+	width: 26px;
+	height: 26px;
+	border-radius: @radius-full;
+	background: transparent;
+	border: 1px solid @color-border;
+	font-size: 12px;
+	color: @color-text-muted;
+	cursor: pointer;
+	transition: @transition-fast;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+
+	&:hover {
+		background: @gray-100;
+		color: @color-text-primary;
+		border-color: @gray-300;
+	}
+
+	&--active {
+		background: @gray-900;
+		color: @white;
+		border-color: @gray-900;
+
+		&:hover {
+			background: @gray-800;
+			color: @white;
+		}
+	}
+}
+
+// ─── Egg hint rows ────────────────────────────────────────────────────────────
+@keyframes settings-egg-fadeIn {
+	from {
+		opacity: 0;
+		transform: translateY(-6px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.settings__about-eggs {
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+	border: 1px solid @color-border;
+	border-radius: @radius-lg;
+	overflow: hidden;
+	background: @white;
+	animation: settings-egg-fadeIn 0.2s ease forwards;
+
+	&-banner {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		padding: 8px 14px;
+		background: @gray-50;
+		border-bottom: 1px solid @color-border;
+		font-size: 11px;
+		color: @color-text-muted;
+		font-style: italic;
+
+		svg {
+			opacity: 0.6;
+			flex-shrink: 0;
+		}
+	}
+}
+
+.settings__about-egg {
+	display: grid;
+	grid-template-columns: 28px 140px 1fr;
+	align-items: center;
+	gap: @space-3;
+	padding: 9px 14px;
+	border-bottom: 1px solid @color-border;
+
+	&:last-child {
+		border-bottom: none;
+	}
+
+	&-emoji {
+		font-size: 15px;
+		line-height: 1;
+		text-align: center;
+	}
+
+	&-word {
+		font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+		font-size: 12px;
+		font-weight: 600;
+		color: @gray-600;
+		letter-spacing: 1px;
+		background: none;
+		border: none;
+		padding: 0;
+	}
+
+	&-clue {
+		font-size: @font-size-sm;
+		color: @color-text-muted;
+		font-style: italic;
+	}
+}

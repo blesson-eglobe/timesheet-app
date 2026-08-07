@@ -1,0 +1,107 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 18px;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+.badge--green {
+  background: #dcfce7;
+  color: #16a34a;
+  border: 1px solid #22c55e;
+}
+.badge--blue {
+  background: #dbeafe;
+  color: #2563eb;
+  border: 1px solid #3b82f6;
+}
+.badge--yellow {
+  background: #fef9c3;
+  color: #ca8a04;
+  border: 1px solid #eab308;
+}
+.badge--orange {
+  background: #ffedd5;
+  color: #ea580c;
+  border: 1px solid #f97316;
+}
+.badge--red {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #ef4444;
+}
+.badge--purple {
+  background: #f3e8ff;
+  color: #9333ea;
+  border: 1px solid #a855f7;
+}
+.badge--gray {
+  background: #f3f4f6;
+  color: #4b5563;
+  border: 1px solid #d1d5db;
+}
+.badge--outline {
+  background: #ffffff;
+  border: 1px solid transparent;
+}
+.badge--outline.badge--green {
+  border-color: #22c55e;
+  color: #16a34a;
+}
+.badge--outline.badge--blue {
+  border-color: #3b82f6;
+  color: #2563eb;
+}
+.badge--outline.badge--yellow {
+  border-color: #eab308;
+  color: #ca8a04;
+}
+.badge--outline.badge--orange {
+  border-color: #f97316;
+  color: #ea580c;
+}
+.badge--outline.badge--red {
+  border-color: #ef4444;
+  color: #dc2626;
+}
+.badge--outline.badge--purple {
+  border-color: #a855f7;
+  color: #9333ea;
+}
+.badge--outline.badge--gray {
+  border-color: #d1d5db;
+  color: #4b5563;
+}
+.badge--dot::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  margin-right: 6px;
+  display: inline-block;
+}
+.badge--dot.badge--green::before {
+  background: #22c55e;
+}
+.badge--dot.badge--orange::before {
+  background: #f97316;
+}
+.badge--dot.badge--red::before {
+  background: #ef4444;
+}
+.badge--dot.badge--gray::before {
+  background: #9ca3af;
+}
+.badge--dot.badge--blue::before {
+  background: #3b82f6;
+}
+.badge--dot.badge--yellow::before {
+  background: #eab308;
+}
+.badge--dot.badge--purple::before {
+  background: #a855f7;
+}

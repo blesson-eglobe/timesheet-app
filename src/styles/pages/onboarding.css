@@ -1,0 +1,611 @@
+.onboarding {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  animation: onboarding-backdrop-in 0.4s ease-out;
+}
+.onboarding__card {
+  position: relative;
+  width: 95vw;
+  max-width: 860px;
+  min-height: 480px;
+  max-height: 90vh;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: onboarding-card-in 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.onboarding__body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  position: relative;
+}
+.onboarding__step {
+  width: 100%;
+  flex-shrink: 0;
+  display: flex;
+  animation: onboarding-step-in 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.onboarding__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 32px 24px;
+  border-top: 1px solid #f3f4f6;
+}
+.onboarding__dots {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.onboarding__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e5e7eb;
+  transition: all 0.3s ease;
+}
+.onboarding__dot--active {
+  width: 24px;
+  border-radius: 4px;
+  background: #2563eb;
+}
+.onboarding__dot--done {
+  background: #3b82f6;
+}
+.onboarding__step-label {
+  font-size: 12px;
+  color: #9ca3af;
+  font-weight: 500;
+}
+.onboarding__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 28px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.onboarding__btn--primary {
+  background: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+}
+.onboarding__btn--primary:hover {
+  background: #1d4ed8;
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45);
+  transform: translateY(-1px);
+}
+.onboarding__btn--ghost {
+  background: transparent;
+  color: #6b7280;
+}
+.onboarding__btn--ghost:hover {
+  color: #374151;
+  background: #f9fafb;
+}
+.onboarding__btn--success {
+  background: #059669;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35);
+}
+.onboarding__btn--success:hover {
+  background: #047857;
+  transform: translateY(-1px);
+}
+.onboarding__skip {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  z-index: 10;
+  background: none;
+  border: none;
+  font-size: 12px;
+  color: #9ca3af;
+  cursor: pointer;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+.onboarding__skip:hover {
+  color: #4b5563;
+  background: #f9fafb;
+}
+.onboarding__welcome {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 48px 40px 24px;
+}
+.onboarding__avatar-cluster {
+  position: relative;
+  width: 120px;
+  height: 70px;
+  margin-bottom: 28px;
+}
+.onboarding__avatar-bubble {
+  position: absolute;
+  border-radius: 50%;
+  border: 3px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #ffffff;
+  font-size: 13px;
+}
+.onboarding__avatar-bubble:nth-child(1) {
+  width: 48px;
+  height: 48px;
+  left: 0;
+  top: 10px;
+  background: #2563eb;
+  animation: onboarding-bubble 0.6s ease 0.1s both;
+}
+.onboarding__avatar-bubble:nth-child(2) {
+  width: 40px;
+  height: 40px;
+  left: 30px;
+  top: 0;
+  background: #7c3aed;
+  animation: onboarding-bubble 0.6s ease 0.2s both;
+}
+.onboarding__avatar-bubble:nth-child(3) {
+  width: 44px;
+  height: 44px;
+  left: 55px;
+  top: 16px;
+  background: #ea580c;
+  animation: onboarding-bubble 0.6s ease 0.3s both;
+}
+.onboarding__avatar-bubble:nth-child(4) {
+  width: 36px;
+  height: 36px;
+  left: 85px;
+  top: 2px;
+  background: #059669;
+  animation: onboarding-bubble 0.6s ease 0.4s both;
+}
+.onboarding__welcome-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: #111827;
+  margin-bottom: 12px;
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+}
+.onboarding__welcome-desc {
+  font-size: 15px;
+  color: #6b7280;
+  line-height: 1.65;
+  max-width: 440px;
+}
+.onboarding__role {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+.onboarding__role-sidebar {
+  width: 220px;
+  background: #111827;
+  padding: 28px 0;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+.onboarding__role-sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 24px;
+  margin-bottom: 32px;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 16px;
+}
+.onboarding__role-sidebar-logo svg {
+  width: 22px;
+  height: 22px;
+  opacity: 0.9;
+}
+.onboarding__role-nav {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 12px;
+}
+.onboarding__role-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5);
+  transition: all 0.15s ease;
+}
+.onboarding__role-nav-item svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+.onboarding__role-nav-item--active {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+.onboarding__role-nav-item--active svg {
+  opacity: 1;
+}
+.onboarding__role-content {
+  flex: 1;
+  padding: 36px 40px 24px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+.onboarding__role-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #111827;
+  margin-bottom: 6px;
+  letter-spacing: -0.4px;
+}
+.onboarding__role-subtitle {
+  font-size: 13px;
+  color: #9ca3af;
+  margin-bottom: 24px;
+}
+.onboarding__role-card {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+}
+.onboarding__role-card-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #9ca3af;
+  margin-bottom: 6px;
+}
+.onboarding__role-card-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.onboarding__role-badge {
+  display: inline-flex;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #dbeafe;
+}
+.onboarding__role-features {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+.onboarding__role-feature {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #4b5563;
+  font-weight: 500;
+}
+.onboarding__role-feature-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #eff6ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 14px;
+}
+.onboarding__tour {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 36px 40px 24px;
+  position: relative;
+}
+.onboarding__tour-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #111827;
+  margin-bottom: 6px;
+  letter-spacing: -0.4px;
+}
+.onboarding__tour-subtitle {
+  font-size: 13px;
+  color: #9ca3af;
+  margin-bottom: 28px;
+}
+.onboarding__tour-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  flex: 1;
+}
+.onboarding__tour-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+.onboarding__tour-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: 14px 14px 0 0;
+}
+.onboarding__tour-card:nth-child(1)::before {
+  background: #2563eb;
+}
+.onboarding__tour-card:nth-child(2)::before {
+  background: #059669;
+}
+.onboarding__tour-card:nth-child(3)::before {
+  background: #7c3aed;
+}
+.onboarding__tour-card:nth-child(4)::before {
+  background: #ea580c;
+}
+.onboarding__tour-card:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  transform: translateY(-2px);
+}
+.onboarding__tour-card-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+.onboarding__tour-card-icon--blue {
+  background: #eff6ff;
+  color: #2563eb;
+}
+.onboarding__tour-card-icon--green {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+.onboarding__tour-card-icon--purple {
+  background: #f3e8ff;
+  color: #7c3aed;
+}
+.onboarding__tour-card-icon--orange {
+  background: #fff7ed;
+  color: #ea580c;
+}
+.onboarding__tour-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+}
+.onboarding__tour-card-desc {
+  font-size: 12.5px;
+  color: #6b7280;
+  line-height: 1.55;
+}
+.onboarding__done {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 48px 40px 24px;
+}
+.onboarding__done-check {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #059669, #10b981);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  box-shadow: 0 8px 24px rgba(5, 150, 105, 0.3);
+  animation: onboarding-check-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s both;
+}
+.onboarding__done-check svg {
+  width: 36px;
+  height: 36px;
+  color: #ffffff;
+  stroke-width: 2.5;
+}
+.onboarding__done-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: #111827;
+  margin-bottom: 10px;
+  letter-spacing: -0.5px;
+}
+.onboarding__done-desc {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.6;
+  max-width: 400px;
+  margin-bottom: 32px;
+}
+.onboarding__done-features {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 8px;
+}
+.onboarding__done-feature {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 24px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  min-width: 150px;
+  transition: all 0.2s ease;
+}
+.onboarding__done-feature:hover {
+  border-color: #3b82f6;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+.onboarding__done-feature-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+.onboarding__done-feature-icon--blue {
+  background: #eff6ff;
+}
+.onboarding__done-feature-icon--green {
+  background: #f0fdf4;
+}
+.onboarding__done-feature-icon--purple {
+  background: #f3e8ff;
+}
+.onboarding__done-feature-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+}
+.onboarding__done-feature-desc {
+  font-size: 11.5px;
+  color: #6b7280;
+  line-height: 1.45;
+  text-align: center;
+}
+@keyframes onboarding-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes onboarding-card-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+@keyframes onboarding-step-in {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes onboarding-bubble {
+  from {
+    opacity: 0;
+    transform: scale(0) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+@keyframes onboarding-check-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@media (max-width: 720px) {
+  .onboarding__card {
+    max-width: 100%;
+    border-radius: 16px;
+    min-height: 420px;
+  }
+  .onboarding__role {
+    flex-direction: column;
+  }
+  .onboarding__role-sidebar {
+    width: 100%;
+    flex-direction: row;
+    padding: 16px;
+    overflow-x: auto;
+  }
+  .onboarding__role-nav {
+    flex-direction: row;
+    padding: 0;
+  }
+  .onboarding__role-content {
+    padding: 24px;
+  }
+  .onboarding__tour-grid {
+    grid-template-columns: 1fr;
+  }
+  .onboarding__done-features {
+    flex-direction: column;
+    align-items: center;
+  }
+  .onboarding__welcome {
+    padding: 32px 24px 16px;
+  }
+  .onboarding__done {
+    padding: 32px 24px 16px;
+  }
+}

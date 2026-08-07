@@ -1,0 +1,58 @@
+@import "./variables.less";
+@import "./mixins.less";
+@import "./layout.less";
+@import "./components/badge.less";
+@import "./components/button.less";
+@import "./components/avatar.less";
+@import "./components/table.less";
+@import "./components/progress.less";
+@import "./components/drawer.less";
+@import "./components/modal.less";
+@import "./components/search-modal.less";
+@import "./components/rich-text-editor.less";
+@import "./components/easter-egg.less";
+@import "./pages/login.less";
+@import "./pages/dashboard.less";
+@import "./pages/worklogs.less";
+@import "./pages/projects.less";
+@import "./pages/project-detail.less";
+@import "./pages/employees.less";
+@import "./pages/approvals.less";
+@import "./pages/reports.less";
+@import "./pages/settings.less";
+@import "./pages/onboarding.less";
+
+// ─── Reset ────────────────────────────────────────────────────────────────────
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+}
+
+html,
+body,
+#root {
+	height: 100%;
+	font-family: @font-family;
+	font-size: @font-size-base;
+	color: @color-text-primary;
+	background: @color-bg;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+a {
+	text-decoration: none;
+	color: inherit;
+}
+button {
+	font-family: @font-family;
+}
+input,
+select,
+textarea {
+	font-family: @font-family;
+	font-size: @font-size-base;
+}

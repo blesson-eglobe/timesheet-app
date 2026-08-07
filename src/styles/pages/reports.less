@@ -1,0 +1,544 @@
+@import "../variables.less";
+@import "../mixins.less";
+
+.reports {
+	// ── Header ──────────────────────────────────────────────────────────────────
+	&__subtitle {
+		font-size: @font-size-sm;
+		color: @color-text-secondary;
+		margin-top: 2px;
+	}
+
+	&__header-actions {
+		.flex-center();
+		gap: @space-3;
+	}
+
+	&__period-select {
+		.flex-center();
+		gap: @space-1;
+		height: 36px;
+		padding: 0 14px;
+		background: @white;
+		border: 1px solid @color-border;
+		border-radius: @radius-lg;
+		font-size: 13px;
+		font-weight: 500;
+		color: @color-text-primary;
+		cursor: pointer;
+		user-select: none;
+	}
+
+	&__export-btn {
+		.flex-center();
+		gap: @space-2;
+		height: 36px;
+		padding: 0 16px;
+		background: @white;
+		border: 1px solid @color-border;
+		border-radius: @radius-lg;
+		font-size: 13px;
+		font-weight: 500;
+		color: @color-text-primary;
+		cursor: pointer;
+		transition: @transition-fast;
+		&:hover {
+			border-color: @gray-400;
+		}
+	}
+
+	// ── Tabs ────────────────────────────────────────────────────────────────────
+	&__tabs {
+		.flex-center();
+		gap: 0;
+		margin-bottom: @space-5;
+		border-bottom: 1px solid @color-border;
+	}
+
+	&__tab {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		padding: 10px 18px;
+		font-size: @font-size-base;
+		font-weight: 500;
+		cursor: pointer;
+		color: @color-text-secondary;
+		background: transparent;
+		border: none;
+		border-bottom: 2px solid transparent;
+		margin-bottom: -1px;
+		transition: all 0.15s ease;
+
+		svg {
+			width: 15px;
+			height: 15px;
+			flex-shrink: 0;
+		}
+
+		&:hover {
+			color: @color-text-primary;
+		}
+		&--active {
+			color: @gray-900;
+			border-bottom-color: @gray-900;
+			font-weight: 600;
+		}
+	}
+
+	// ── Metric Cards ────────────────────────────────────────────────────────────
+	&__metrics {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: @space-4;
+		margin-bottom: @space-4;
+	}
+
+	&__metric-card {
+		.card-base();
+		padding: @space-5;
+
+		&-top {
+			.flex-between();
+			margin-bottom: @space-3;
+		}
+
+		&-label {
+			font-size: 10px;
+			font-weight: 600;
+			color: @color-text-muted;
+			letter-spacing: 0.5px;
+			text-transform: uppercase;
+		}
+
+		&-value {
+			font-size: 32px;
+			font-weight: 700;
+			color: @color-text-primary;
+			letter-spacing: -1px;
+			line-height: 1;
+			margin-bottom: @space-2;
+		}
+
+		&-trend {
+			font-size: @font-size-xs;
+			font-weight: 500;
+
+			&--up {
+				color: @green-600;
+			}
+			&--down {
+				color: @red-500;
+			}
+			&--neutral {
+				color: @color-text-muted;
+			}
+		}
+	}
+
+	// ── Chart Card ──────────────────────────────────────────────────────────────
+	&__chart-card {
+		.card-base();
+		padding: @space-5;
+		margin-bottom: @space-4;
+	}
+
+	&__chart-header {
+		.flex-between();
+		margin-bottom: @space-4;
+	}
+
+	&__chart-title {
+		font-size: @font-size-base;
+		font-weight: 600;
+		color: @color-text-primary;
+	}
+
+	// ── Employee Table Card ──────────────────────────────────────────────────────
+	&__table-card {
+		.card-base();
+		overflow: hidden;
+		margin-bottom: @space-4;
+	}
+
+	&__table-header {
+		padding: @space-4 @space-5;
+		border-bottom: 1px solid @color-border;
+	}
+
+	&__table-title {
+		font-size: @font-size-md;
+		font-weight: 600;
+		color: @color-text-primary;
+	}
+
+	&__table {
+		width: 100%;
+		border-collapse: collapse;
+
+		thead tr {
+			background: @gray-50;
+			border-bottom: 1px solid @color-border;
+		}
+
+		th {
+			padding: 10px 20px;
+			text-align: left;
+			font-size: 10px;
+			font-weight: 600;
+			color: @color-text-muted;
+			letter-spacing: 0.5px;
+			text-transform: uppercase;
+			white-space: nowrap;
+		}
+
+		tbody tr {
+			border-bottom: 1px solid @gray-100;
+			transition: background 0.12s ease;
+			&:last-child {
+				border-bottom: none;
+			}
+			&:hover {
+				background: @gray-50;
+			}
+		}
+
+		td {
+			padding: 12px 20px;
+			font-size: 13px;
+			color: @color-text-primary;
+		}
+	}
+
+	&__table-employee {
+		.flex-center();
+		gap: @space-3;
+	}
+
+	&__table-avatar {
+		width: 28px;
+		height: 28px;
+		border-radius: @radius-full;
+		.flex-center();
+		justify-content: center;
+		color: @white;
+		font-size: 10px;
+		font-weight: 700;
+		flex-shrink: 0;
+	}
+
+	&__table-name {
+		font-weight: 500;
+		color: @color-text-primary;
+	}
+
+	&__table-week {
+		font-weight: 600;
+		color: @color-text-primary;
+	}
+	&__table-month {
+		color: @color-text-secondary;
+	}
+	&__table-billable {
+		color: @blue-600;
+		font-weight: 500;
+	}
+	&__table-nonbillable {
+		color: @color-text-muted;
+	}
+
+	&__table-trend {
+		font-size: 16px;
+		font-weight: 700;
+		&--up {
+			color: @green-500;
+		}
+		&--down {
+			color: @red-500;
+		}
+	}
+
+	// ── Export Grid ─────────────────────────────────────────────────────────────
+	&__export-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: @space-4;
+	}
+	&__export-card {
+		.card-base();
+		padding: @space-5;
+		text-align: center;
+		cursor: pointer;
+		transition: box-shadow 0.18s;
+		&:hover {
+			box-shadow: @shadow-md;
+		}
+
+		&-icon {
+			font-size: 24px;
+			margin-bottom: @space-3;
+		}
+		&-label {
+			font-size: @font-size-base;
+			font-weight: 600;
+			margin-bottom: 4px;
+		}
+		&-desc {
+			font-size: @font-size-sm;
+			color: @color-text-secondary;
+		}
+	}
+
+	// ── Utilization charts row ───────────────────────────────────────────────────
+	&__util-charts {
+		display: flex;
+		gap: @space-4;
+		margin-bottom: @space-4;
+	}
+
+	// ── Individual utilization list ──────────────────────────────────────────────
+	&__util-rows {
+		padding: @space-2 0;
+	}
+
+	&__util-row {
+		display: flex;
+		align-items: center;
+		padding: 12px @space-5;
+		gap: @space-4;
+		transition: background 0.12s;
+		border-bottom: 1px solid @gray-100;
+		&:last-child {
+			border-bottom: none;
+		}
+		&:hover {
+			background: @gray-50;
+		}
+	}
+
+	&__util-employee {
+		.flex-center();
+		gap: @space-3;
+		width: 160px;
+		flex-shrink: 0;
+	}
+
+	&__util-bar-wrap {
+		.flex-center();
+		flex: 1;
+		gap: @space-3;
+	}
+
+	&__util-bar-track {
+		flex: 1;
+		height: 8px;
+		background: @gray-100;
+		border-radius: @radius-full;
+		overflow: hidden;
+	}
+
+	&__util-bar-fill {
+		height: 100%;
+		border-radius: @radius-full;
+		transition: width 0.4s ease;
+	}
+
+	&__util-pct {
+		font-size: 12px;
+		font-weight: 700;
+		min-width: 34px;
+		text-align: right;
+	}
+
+	// ── Export center ─────────────────────────────────────────────────────────
+	&__export-desc {
+		font-size: @font-size-base;
+		color: @color-text-secondary;
+		margin-bottom: @space-4;
+		line-height: 1.6;
+	}
+
+	&__export-list {
+		.card-base();
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+	}
+
+	&__export-row {
+		display: flex;
+		align-items: center;
+		gap: @space-4;
+		padding: 18px 24px;
+		background: @white;
+		border-bottom: 1px solid @gray-100;
+		transition: background 0.12s;
+		&:last-child {
+			border-bottom: none;
+		}
+		&:hover {
+			background: @gray-50;
+		}
+	}
+
+	&__export-row-icon {
+		font-size: 18px;
+		width: 38px;
+		height: 38px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: @gray-100;
+		border-radius: @radius-lg;
+		flex-shrink: 0;
+		color: @color-text-secondary;
+	}
+
+	&__export-row-info {
+		flex: 1;
+	}
+
+	&__export-row-title {
+		font-size: @font-size-base;
+		font-weight: 600;
+		color: @color-text-primary;
+		margin-bottom: 2px;
+	}
+
+	&__export-row-desc {
+		font-size: @font-size-xs;
+		color: @color-text-muted;
+	}
+
+	&__export-fmt {
+		font-size: 11px;
+		font-weight: 700;
+		color: @color-text-muted;
+		background: @gray-100;
+		padding: 3px 8px;
+		border-radius: @radius-sm;
+		flex-shrink: 0;
+	}
+
+	&__export-dl-btn {
+		.flex-center();
+		gap: @space-2;
+		height: 32px;
+		padding: 0 14px;
+		border: 1px solid @color-border;
+		border-radius: @radius-lg;
+		font-size: 12px;
+		font-weight: 500;
+		color: @color-text-primary;
+		background: @white;
+		cursor: pointer;
+		flex-shrink: 0;
+		transition: @transition-fast;
+		&:hover {
+			border-color: @gray-400;
+			background: @gray-50;
+		}
+	}
+
+	// Additional helpers
+	&__header-subtitle {
+		color: #6b7280;
+		font-size: 13px;
+		margin-top: 2px;
+	}
+	&__date-control-row {
+		.flex-center();
+		gap: 6px;
+	}
+	&__date-hint {
+		font-size: 12px;
+		color: #94a3b8;
+	}
+	&__table-hours-cell {
+		font-weight: 600;
+	}
+	&__table-over-cell {
+		color: #059669;
+	}
+	&__table-sec-cell {
+		color: #6b7280;
+	}
+	&__table-font-sm {
+		font-size: 13px;
+	}
+	&__chart-flex {
+		flex: 1;
+	}
+	&__card-padding-sm {
+		padding: 8px 0;
+	}
+	&__empty-center {
+		padding: 24px;
+		color: #94a3b8;
+		text-align: center;
+	}
+	&__flex-gap-md {
+		display: flex;
+		gap: 16px;
+		align-items: center;
+	}
+	&__flex-wrap-col {
+		flex: 1 1 220px;
+		min-width: 220px;
+	}
+	&__text-highlight-purple {
+		color: #1e293b;
+	}
+	&__select {
+		width: 100%;
+		padding: 8px 12px;
+		border: 1px solid #d1d5db;
+		border-radius: 6px;
+		font-size: 14px;
+		height: 38px;
+		background: #fff;
+		font-weight: 500;
+		font-family: inherit;
+		outline: none;
+	}
+	&__filter-label {
+		display: block;
+		font-size: 12px;
+		font-weight: 600;
+		margin-bottom: 6px;
+		color: #4b5563;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+}
+
+@media (max-width: 1024px) {
+	.reports {
+		&__metrics {
+			grid-template-columns: repeat(2, 1fr);
+		}
+		&__util-charts {
+			flex-direction: column;
+		}
+	}
+}
+
+@media (max-width: 768px) {
+	.reports {
+		&__metrics {
+			grid-template-columns: 1fr;
+		}
+		&__export-grid {
+			grid-template-columns: 1fr;
+		}
+		&__tabs {
+			overflow-x: auto;
+			white-space: nowrap;
+		}
+		&__export-row {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: @space-2;
+		}
+	}
+}

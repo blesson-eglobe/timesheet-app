@@ -1,0 +1,62 @@
+@import "../variables.less";
+
+.progress {
+	height: 5px;
+	background: @gray-200;
+	border-radius: @radius-full;
+	overflow: hidden;
+
+	&__fill {
+		height: 100%;
+		border-radius: @radius-full;
+		transition: width 0.4s ease;
+		&--blue {
+			background: @blue-600;
+		}
+		&--green {
+			background: @green-500;
+		}
+		&--orange {
+			background: @orange-500;
+		}
+		&--red {
+			background: @red-500;
+		}
+		&--purple {
+			background: #9333ea;
+		}
+	}
+
+	&--thin {
+		height: 3px;
+	}
+	&--thick {
+		height: 8px;
+	}
+}
+
+.util-bar {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+
+	&__track {
+		flex: 1;
+		height: 5px;
+		background: @gray-200;
+		border-radius: @radius-full;
+		overflow: hidden;
+	}
+
+	&__fill {
+		height: 100%;
+		border-radius: @radius-full;
+	}
+
+	&__label {
+		font-size: @font-size-sm;
+		font-weight: 600;
+		min-width: 34px;
+		text-align: right;
+	}
+}

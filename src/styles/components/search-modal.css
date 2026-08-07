@@ -1,0 +1,136 @@
+.search-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.5);
+  backdrop-filter: blur(2px);
+  z-index: 9999;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 10vh;
+}
+.search-modal {
+  width: 100%;
+  max-width: 540px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+.search-modal__header {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f3f4f6;
+}
+.search-modal__header input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 15px;
+  margin-left: 12px;
+  color: #111827;
+  background: transparent;
+}
+.search-modal__header input::placeholder {
+  color: #9ca3af;
+}
+.search-modal__esc {
+  font-size: 12px;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #e5e7eb;
+}
+.search-modal__body {
+  padding: 12px 0;
+}
+.search-modal__section-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #9ca3af;
+  letter-spacing: 0.05em;
+  padding: 8px 20px 12px;
+}
+.search-modal__empty {
+  padding: 24px 16px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 13px;
+}
+.search-modal__item {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+.search-modal__item:hover,
+.search-modal__item--active {
+  background: #f1f5f9;
+}
+.search-modal__item:hover .search-modal__item-label,
+.search-modal__item--active .search-modal__item-label {
+  font-weight: 600;
+}
+.search-modal__item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: #6b7280;
+  margin-right: 12px;
+}
+.search-modal__item-icon svg {
+  width: 18px;
+  height: 18px;
+}
+.search-modal__item-label {
+  flex: 1;
+  font-size: 14px;
+  color: #111827;
+  font-weight: 500;
+}
+.search-modal__item-arrow {
+  width: 16px;
+  height: 16px;
+  opacity: 0.5;
+}
+/* ── Easter egg hint footer ──────────────────────────────────────────────── */
+.search-modal__footer-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-top: 1px solid #f3f4f6;
+  font-size: 11.5px;
+  color: #a78bfa;
+  font-style: italic;
+  cursor: default;
+  user-select: none;
+  background: linear-gradient(90deg, #faf5ff 0%, #ffffff 100%);
+  letter-spacing: 0.01em;
+}
+.search-modal__footer-hint-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #a78bfa;
+  flex-shrink: 0;
+  animation: ee-hint-pulse 1.8s ease-in-out infinite;
+}
+@keyframes ee-hint-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.6);
+  }
+}

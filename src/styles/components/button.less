@@ -1,0 +1,79 @@
+@import "../variables.less";
+@import "../mixins.less";
+
+.btn {
+	.btn-base();
+
+	&--primary {
+		background: @gray-900;
+		color: @white;
+		&:hover {
+			background: @gray-800;
+		}
+		&:active {
+			background: @gray-700;
+		}
+	}
+
+	&--secondary {
+		background: @white;
+		color: @color-text-primary;
+		border: 1px solid @color-border;
+		&:hover {
+			background: @gray-50;
+		}
+	}
+
+	&--ghost {
+		background: transparent;
+		color: @color-text-secondary;
+		border: 1px solid @color-border;
+		&:hover {
+			background: @gray-50;
+			color: @color-text-primary;
+		}
+	}
+
+	&--danger {
+		background: @red-500;
+		color: @white;
+		&:hover {
+			background: @red-600;
+		}
+	}
+
+	&--icon {
+		padding: 7px;
+		border-radius: @radius-lg;
+		background: transparent;
+		color: @color-text-secondary;
+		border: 1px solid @color-border;
+		&:hover {
+			background: @gray-50;
+		}
+		svg {
+			width: 16px;
+			height: 16px;
+			display: block;
+		}
+	}
+
+	&--sm {
+		padding: 5px 11px;
+		font-size: @font-size-sm;
+	}
+	&--lg {
+		padding: 10px 20px;
+		font-size: @font-size-md;
+	}
+
+	svg {
+		width: 15px;
+		height: 15px;
+	}
+
+	&:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+}

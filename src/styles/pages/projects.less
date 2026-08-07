@@ -1,0 +1,268 @@
+@import "../variables.less";
+@import "../mixins.less";
+
+.projects {
+	&__grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: @space-4;
+	}
+
+	&__card {
+		.card-base();
+		padding: @space-5;
+		transition: box-shadow 0.18s ease;
+		&:hover {
+			box-shadow: @shadow-md;
+		}
+
+		&-header {
+			.flex-between();
+			margin-bottom: @space-3;
+		}
+		&-title {
+			font-size: @font-size-md;
+			font-weight: 600;
+			color: @color-text-primary;
+		}
+		&-badges {
+			.flex-center();
+			gap: @space-2;
+		}
+		&-desc {
+			font-size: @font-size-sm;
+			color: @color-text-secondary;
+			line-height: 1.5;
+			margin-bottom: @space-4;
+			min-height: 38px;
+		}
+
+		&-progress {
+			margin-bottom: @space-4;
+		}
+		&-progress-header {
+			.flex-between();
+			margin-bottom: 6px;
+			font-size: @font-size-sm;
+		}
+		&-progress-label {
+			color: @color-text-secondary;
+		}
+		&-progress-pct {
+			font-weight: 600;
+		}
+
+		&-meta {
+			.flex-between();
+			margin-bottom: @space-4;
+			align-items: flex-end;
+		}
+		&-meta-hours {
+			font-size: 11px;
+			font-weight: 600;
+			text-align: right;
+		}
+		&-meta-days {
+			font-size: 10px;
+			color: @color-text-muted;
+			text-align: right;
+			margin-top: 2px;
+		}
+
+		&-footer {
+			.flex-between();
+			padding-top: @space-3;
+			border-top: 1px solid @color-border;
+			align-items: center;
+		}
+		&-footer-badges {
+			.flex-center();
+			gap: @space-1;
+		}
+		&-footer-client {
+			font-size: 11px;
+			color: @color-text-secondary;
+		}
+	}
+
+	&__toolbar {
+		.flex-between();
+		margin-bottom: @space-5;
+		align-items: center;
+	}
+	&__toolbar-left {
+		.flex-center();
+		gap: 0;
+		flex: 1;
+	}
+	&__toolbar-right {
+		.flex-center();
+		gap: @space-3;
+	}
+
+	&__search {
+		.flex-center();
+		gap: @space-2;
+		height: 38px;
+		padding: 0 14px;
+		background: @gray-100;
+		border: 1px solid @gray-200;
+		border-radius: @radius-full;
+		width: 280px;
+		flex-shrink: 0;
+		&:focus-within {
+			border-color: @color-primary;
+			background: @white;
+		}
+		svg {
+			width: 15px;
+			height: 15px;
+			color: @color-text-muted;
+			flex-shrink: 0;
+		}
+		input {
+			border: none;
+			outline: none;
+			font-size: 13px;
+			width: 100%;
+			background: transparent;
+			color: @color-text-primary;
+		}
+	}
+
+	&__tabs {
+		display: flex;
+		gap: 2px;
+		background: @gray-100;
+		padding: 3px;
+		border-radius: @radius-full;
+		margin-left: @space-4;
+		border: 1px solid @gray-200;
+	}
+
+	&__tab {
+		background: transparent;
+		border: none;
+		font-size: 13px;
+		font-weight: 500;
+		color: @color-text-secondary;
+		padding: 5px 14px;
+		border-radius: @radius-full;
+		cursor: pointer;
+		transition: all 0.15s ease;
+		line-height: 1;
+
+		&:hover {
+			color: @color-text-primary;
+		}
+
+		&--active {
+			background: @white;
+			color: @gray-900;
+			box-shadow: @shadow-xs;
+			font-weight: 600;
+		}
+	}
+
+	// List view table styles
+	&__table-dot {
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+		flex-shrink: 0;
+	}
+	&__table-proj-name {
+		font-weight: 600;
+		color: #111827;
+		font-size: 14px;
+	}
+	&__table-lead-row {
+		.flex-center();
+		gap: 6px;
+		svg {
+			flex-shrink: 0;
+		}
+		span {
+			color: #334155;
+			font-weight: 500;
+		}
+	}
+	&__table-progress-col {
+		.flex-col();
+		gap: 4px;
+	}
+	&__table-progress-label {
+		.flex-between();
+		font-size: 12px;
+		color: #475569;
+		font-weight: 600;
+	}
+	&__table-hours-val {
+		font-weight: 600;
+		color: #111827;
+	}
+	&__table-hours-total {
+		color: #6b7280;
+	}
+	&__table-action-cell {
+		text-align: right;
+	}
+	&__table-edit-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 30px;
+		height: 30px;
+		padding: 0;
+		color: #3b82f6;
+		background: #ffffff;
+		border: 1px solid #e2e8f0;
+		border-radius: 6px;
+		cursor: pointer;
+		&:hover {
+			background: #eff6ff;
+		}
+	}
+	&__table-empty {
+		text-align: center;
+		padding: 40px;
+		color: #6b7280;
+	}
+	&__pagination-wrapper {
+		margin-top: 24px;
+	}
+}
+
+@media (max-width: 1024px) {
+	.projects {
+		&__grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+}
+
+@media (max-width: 768px) {
+	.projects {
+		&__grid {
+			grid-template-columns: 1fr;
+		}
+		&__toolbar {
+			flex-direction: column;
+			align-items: stretch;
+			gap: @space-3;
+		}
+		&__toolbar-left {
+			flex-direction: column;
+			align-items: stretch;
+			gap: @space-3;
+		}
+		&__search {
+			width: 100%;
+		}
+		&__tabs {
+			margin-left: 0;
+			overflow-x: auto;
+			white-space: nowrap;
+		}
+	}
+}
