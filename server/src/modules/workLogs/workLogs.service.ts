@@ -35,8 +35,8 @@ const getTickets = async (workLogId: string) => {
 
 export const workLogsService = {
   async list(userId: string, params: { weekStart?: string; weekEnd?: string; projectId?: string; search?: string; page?: number; limit?: number } = {}) {
-    let sql = `SELECT wl.*, p.name AS project_name, ts.status AS timesheet_status
-               FROM work_logs wl JOIN projects p ON p.id = wl.project_id
+    let sql = `SELECT wl.*, COALESCE(p.name, CASE WHEN wl.project_id = 'internal' THEN 'Internal' ELSE 'General' END) AS project_name, ts.status AS timesheet_status
+               FROM work_logs wl LEFT JOIN projects p ON p.id = wl.project_id
                LEFT JOIN timesheets ts ON ts.user_id = wl.user_id AND wl.date >= ts.week_start AND wl.date <= ts.week_end
                WHERE wl.user_id = $1`;
     const qParams: unknown[] = [userId];
@@ -172,10 +172,16 @@ export const workLogsService = {
       const wl = res.rows[0] as Record<string, unknown>;
 
       await client.query(
-        `UPDATE projects SET logged_hours = logged_hours + $1,
-         progress = COALESCE(LEAST(100, ROUND((logged_hours + $1) / NULLIF(estimated_hours, 0) * 100)), 0),
-         updated_at = NOW() WHERE id = $2`,
-        [data.hours, resolvedProjectId]
+        `UPDATE projects p SET
+           logged_hours = (SELECT COALESCE(SUM(hours), 0) FROM work_logs WHERE project_id = $1),
+           progress = CASE
+             WHEN p.status = 'Completed' THEN 100
+             WHEN p.estimated_hours > 0 AND p.project_type != 'Internal' THEN COALESCE(LEAST(100, ROUND((SELECT COALESCE(SUM(hours), 0) FROM work_logs WHERE project_id = $1) / p.estimated_hours * 100)), 0)
+             ELSE COALESCE(LEAST(100, ROUND((SELECT COUNT(CASE WHEN task_status = 'Completed' OR status = 'Approved' THEN 1 END) FROM work_logs WHERE project_id = $1) / NULLIF((SELECT COUNT(*) FROM work_logs WHERE project_id = $1), 0) * 100)), 0)
+           END,
+           updated_at = NOW()
+         WHERE p.id = $1`,
+        [resolvedProjectId]
       );
 
       // Automatically assign employee to project members when logging tasks
@@ -251,13 +257,18 @@ export const workLogsService = {
     const res = await query(`UPDATE work_logs SET ${fields.join(',')} WHERE id=$${idx} RETURNING *`, params);
     const updated = res.rows[0] as Record<string, unknown>;
 
-    if (data.hours !== undefined) {
-      const diff = data.hours - Number(old['hours']);
+    if (data.hours !== undefined || data.taskStatus !== undefined || data.status !== undefined) {
       await query(
-        `UPDATE projects SET logged_hours = GREATEST(0, logged_hours + $1),
-         progress = COALESCE(LEAST(100, ROUND((GREATEST(0, logged_hours + $1)) / NULLIF(estimated_hours, 0) * 100)), 0),
-         updated_at = NOW() WHERE id = $2`,
-        [diff, old['project_id']]
+        `UPDATE projects p SET
+           logged_hours = (SELECT COALESCE(SUM(hours), 0) FROM work_logs WHERE project_id = $1),
+           progress = CASE
+             WHEN p.status = 'Completed' THEN 100
+             WHEN p.estimated_hours > 0 AND p.project_type != 'Internal' THEN COALESCE(LEAST(100, ROUND((SELECT COALESCE(SUM(hours), 0) FROM work_logs WHERE project_id = $1) / p.estimated_hours * 100)), 0)
+             ELSE COALESCE(LEAST(100, ROUND((SELECT COUNT(CASE WHEN task_status = 'Completed' OR status = 'Approved' THEN 1 END) FROM work_logs WHERE project_id = $1) / NULLIF((SELECT COUNT(*) FROM work_logs WHERE project_id = $1), 0) * 100)), 0)
+           END,
+           updated_at = NOW()
+         WHERE p.id = $1`,
+        [old['project_id']]
       );
     }
 
@@ -281,10 +292,16 @@ export const workLogsService = {
     }
     await query('DELETE FROM work_logs WHERE id=$1', [id]);
     await query(
-      `UPDATE projects SET logged_hours = GREATEST(0, logged_hours - $1),
-       progress = COALESCE(LEAST(100, ROUND((GREATEST(0, logged_hours - $1)) / NULLIF(estimated_hours, 0) * 100)), 0),
-       updated_at = NOW() WHERE id = $2`,
-      [old['hours'], old['project_id']]
+      `UPDATE projects p SET
+         logged_hours = (SELECT COALESCE(SUM(hours), 0) FROM work_logs WHERE project_id = $1),
+         progress = CASE
+           WHEN p.status = 'Completed' THEN 100
+           WHEN p.estimated_hours > 0 AND p.project_type != 'Internal' THEN COALESCE(LEAST(100, ROUND((SELECT COALESCE(SUM(hours), 0) FROM work_logs WHERE project_id = $1) / p.estimated_hours * 100)), 0)
+           ELSE COALESCE(LEAST(100, ROUND((SELECT COUNT(CASE WHEN task_status = 'Completed' OR status = 'Approved' THEN 1 END) FROM work_logs WHERE project_id = $1) / NULLIF((SELECT COUNT(*) FROM work_logs WHERE project_id = $1), 0) * 100)), 0)
+         END,
+         updated_at = NOW()
+       WHERE p.id = $1`,
+      [old['project_id']]
     );
     return { ok: true };
   },

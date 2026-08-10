@@ -8,7 +8,10 @@ interface ProgressBarProps {
 }
 
 export const ProgressBar: React.FC<ProgressBarProps> = ({ value, max = 100, color = 'blue', thickness }) => {
-  const pct = Math.min(100, Math.round((value / max) * 100));
+  const num = Number(value) || 0;
+  const safeMax = Number(max) > 0 ? Number(max) : 100;
+  const rawPct = (num / safeMax) * 100;
+  const pct = num > 0 ? Math.max(2, Math.min(100, Math.round(rawPct))) : 0;
   const cls = `progress${thickness === 'thin' ? ' progress--thin' : thickness === 'thick' ? ' progress--thick' : ''}`;
   return (
     <div className={cls}>

@@ -86,9 +86,9 @@ export const ProjectDetail: React.FC = () => {
   const remaining = Math.max(0, (project.totalHours || 0) - (project.loggedHours || 0));
   const daysLeft = Math.round(remaining / 8);
 
-  const completedTasksCount = tasks.filter((t: { status: string }) => t.status === 'Completed').length;
-  const inProgressTasksCount = tasks.filter((t: { status: string }) => t.status === 'In Progress').length;
-  const todoTasksCount = tasks.filter((t: { status: string }) => t.status === 'Todo' || t.status === 'Not Started').length;
+  const completedTasksCount = tasks.filter((t: any) => (t.taskStatus || t.status) === 'Completed').length;
+  const inProgressTasksCount = tasks.filter((t: any) => (t.taskStatus || t.status) === 'In Progress').length;
+  const todoTasksCount = tasks.filter((t: any) => (t.taskStatus || t.status) === 'Todo' || (t.taskStatus || t.status) === 'Not Started').length;
   const totalTasks = tasks.length || 1;
 
   const tabs = ['Overview', 'Tasks', 'Team'];
