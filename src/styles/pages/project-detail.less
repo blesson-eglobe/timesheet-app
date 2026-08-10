@@ -491,7 +491,14 @@
 		font-size: @font-size-base;
 		font-weight: 500;
 		color: @color-text-primary;
-		transition: color 0.12s;
+		cursor: pointer;
+		transition: color 0.12s, text-decoration 0.12s;
+
+		&:hover,
+		&--link:hover {
+			color: @color-primary;
+			text-decoration: underline;
+		}
 	}
 
 	// ── Assignee ─────────────────────────────────────────────────────────────

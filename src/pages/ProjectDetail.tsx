@@ -25,7 +25,7 @@ const PRIORITY_META: Record<string, { label: string; bg: string; color: string }
 type TaskFilter = 'all' | 'In Progress' | 'Todo' | 'Completed' | 'Not Started';
 
 export const ProjectDetail: React.FC = () => {
-  const { role } = useAppStore();
+  const { role, currentUser } = useAppStore();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'overview' | 'tasks' | 'team' | 'activity'>('overview');
@@ -35,6 +35,8 @@ export const ProjectDetail: React.FC = () => {
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
+  const [editingTaskLog, setEditingTaskLog] = useState<any | null>(null);
+  const [isReadOnlyDrawer, setIsReadOnlyDrawer] = useState(false);
   const [selectedMemberLogId, setSelectedMemberLogId] = useState<string | null>(null);
 
   const { data: project, isLoading } = useProject(id || '');
@@ -58,6 +60,16 @@ export const ProjectDetail: React.FC = () => {
   if (!project) {
     return <div className="page-inner"><p style={{ padding: 40, textAlign: 'center' }}>Project not found.</p></div>;
   }
+
+  const handleOpenTaskDrawer = (t: any) => {
+    setEditingTaskLog({
+      ...t,
+      projectId: t.projectId || project?.id,
+      projectName: t.projectName || project?.name,
+    });
+    setIsReadOnlyDrawer(true);
+    setShowDrawer(true);
+  };
 
   const members = project.teamMembers || [];
   const tasks = project.tasks || project.recentTasks || [];
@@ -187,12 +199,12 @@ export const ProjectDetail: React.FC = () => {
           <div className="proj-detail__stat-divider"/>
           <div className="proj-detail__stat">
             <div className="proj-detail__stat-label">BUDGET</div>
-            <div className="proj-detail__stat-value">{project.totalHours}h</div>
+            <div className="proj-detail__stat-value">{project.totalHours > 0 ? `${project.totalHours}h` : 'No budget'}</div>
           </div>
           <div className="proj-detail__stat-divider"/>
           <div className="proj-detail__stat">
             <div className="proj-detail__stat-label">REMAINING</div>
-            <div className="proj-detail__stat-value">{remaining}h</div>
+            <div className="proj-detail__stat-value">{project.totalHours > 0 ? `${remaining}h` : 'Ongoing'}</div>
           </div>
         </div>
         <ProgressBar value={project.progress} color={ex.color === '#3b82f6' ? 'blue' : ex.color === '#22c55e' ? 'green' : ex.color === '#9333ea' ? 'purple' : ex.color === '#f97316' ? 'orange' : 'red'} thickness="thick" />
@@ -218,27 +230,43 @@ export const ProjectDetail: React.FC = () => {
         <div className="proj-detail__overview-grid">
           {/* Budget vs Logged chart */}
           <div className="proj-detail__chart-card">
-            <div className="proj-detail__chart-title">Budget vs Logged Hours</div>
-            <svg width="100%" viewBox="0 0 450 160" preserveAspectRatio="none" style={{ display: 'block', marginTop: 12 }}>
-              {[0, Math.round(project.totalHours * 0.25), Math.round(project.totalHours * 0.5), Math.round(project.totalHours * 0.75), project.totalHours || 100].map((v, i) => {
-                const maxBudget = project.totalHours || 100;
-                const y = 15 + (1 - v / maxBudget) * 115;
-                return <g key={i}><line x1="45" y1={y} x2="435" y2={y} stroke="#f0f0f0" strokeWidth="1"/><text x="38" y={y + 3.5} textAnchor="end" fontSize="9.5" fill="#9ca3af">{v}</text></g>;
-              })}
-              {/* Logged bar */}
-              {(() => {
-                const maxBudget = project.totalHours || 100;
-                const rawLh = ((project.loggedHours || 0) / maxBudget) * 115;
-                const lH = project.loggedHours > 0 ? Math.max(6, Math.min(115, rawLh)) : 0;
-                const rH = Math.min(115, (remaining / maxBudget) * 115);
-                return <>
-                  <rect x="130" y={130 - lH} width="60" height={lH} rx="4" fill={ex.color}/>
-                  <text x="160" y="148" textAnchor="middle" fontSize="10" fill="#4b5563" fontWeight="500">Logged</text>
-                  <rect x="290" y={130 - rH} width="60" height={rH} rx="4" fill="#e5e7eb"/>
-                  <text x="320" y="148" textAnchor="middle" fontSize="10" fill="#4b5563" fontWeight="500">Remaining</text>
-                </>;
-              })()}
-            </svg>
+            <div className="proj-detail__chart-title">
+              {project.totalHours > 0 ? 'Budget vs Logged Hours' : 'Logged Timesheet Hours'}
+            </div>
+            {project.totalHours > 0 ? (
+              <svg width="100%" viewBox="0 0 450 160" preserveAspectRatio="none" style={{ display: 'block', marginTop: 12 }}>
+                {[0, Math.round(project.totalHours * 0.25), Math.round(project.totalHours * 0.5), Math.round(project.totalHours * 0.75), project.totalHours || 100].map((v, i) => {
+                  const maxBudget = project.totalHours || 100;
+                  const y = 15 + (1 - v / maxBudget) * 115;
+                  return <g key={i}><line x1="45" y1={y} x2="435" y2={y} stroke="#f0f0f0" strokeWidth="1"/><text x="38" y={y + 3.5} textAnchor="end" fontSize="9.5" fill="#9ca3af">{v}</text></g>;
+                })}
+                {/* Logged bar */}
+                {(() => {
+                  const maxBudget = project.totalHours || 100;
+                  const rawLh = ((project.loggedHours || 0) / maxBudget) * 115;
+                  const lH = project.loggedHours > 0 ? Math.max(6, Math.min(115, rawLh)) : 0;
+                  const rH = Math.min(115, (remaining / maxBudget) * 115);
+                  return <>
+                    <rect x="130" y={130 - lH} width="60" height={lH} rx="4" fill={ex.color}/>
+                    <text x="160" y="148" textAnchor="middle" fontSize="10" fill="#4b5563" fontWeight="500">Logged</text>
+                    <rect x="290" y={130 - rH} width="60" height={rH} rx="4" fill="#e5e7eb"/>
+                    <text x="320" y="148" textAnchor="middle" fontSize="10" fill="#4b5563" fontWeight="500">Remaining</text>
+                  </>;
+                })()}
+              </svg>
+            ) : (
+              <div style={{ padding: '24px 12px', textAlign: 'center' }}>
+                <div style={{ fontSize: 32, fontWeight: 700, color: '#0f172a' }}>
+                  {project.loggedHours}h
+                </div>
+                <div style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
+                  Total time accumulated from timesheets and work logs.
+                </div>
+                <div style={{ display: 'inline-block', marginTop: 12, padding: '4px 12px', background: '#f1f5f9', borderRadius: 6, fontSize: 12, color: '#475569', fontWeight: 500 }}>
+                  No budget limit set for this project
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Task Distribution */}
@@ -331,7 +359,14 @@ export const ProjectDetail: React.FC = () => {
                   <div key={t.id} className="task-panel__row">
                     {/* Name */}
                     <div className="task-panel__col task-panel__col--task">
-                      <span className="task-panel__task-name">{t.taskName}</span>
+                      <span
+                        className="task-panel__task-name task-panel__task-name--link"
+                        onClick={() => handleOpenTaskDrawer(t)}
+                        style={{ cursor: 'pointer' }}
+                        title="Click to open task in drawer"
+                      >
+                        {t.taskName}
+                      </span>
                     </div>
 
                     {/* Assignee */}
@@ -390,15 +425,15 @@ export const ProjectDetail: React.FC = () => {
                       <span className="task-panel__due">{formatDisplayDate(t.date)}</span>
                     </div>
 
-                    {/* View Audit */}
+                    {/* Open Drawer Action */}
                     <div className="task-panel__col" style={{ width: 45, flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
                       <button
                         type="button"
-                        title="View Timesheet Audit (Read-Only)"
-                        onClick={() => setSelectedMemberLogId(t.id)}
+                        title="Open task drawer"
+                        onClick={() => handleOpenTaskDrawer(t)}
                         style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 4, color: '#475569', borderRadius: 4 }}
                       >
-                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6">
+                        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6">
                           <path d="M1 8s3-5.5 7-5.5S15 8 15 8s-3 5.5-7 5.5S1 8 1 8z"/>
                           <circle cx="8" cy="8" r="2.5"/>
                         </svg>
@@ -537,8 +572,14 @@ export const ProjectDetail: React.FC = () => {
 
       {showDrawer && (
         <LogTaskDrawer
+          editingLog={editingTaskLog}
           defaultProject={project?.id}
-          onClose={() => setShowDrawer(false)}
+          isReadOnly={isReadOnlyDrawer}
+          onClose={() => {
+            setShowDrawer(false);
+            setEditingTaskLog(null);
+            setIsReadOnlyDrawer(false);
+          }}
         />
       )}
 

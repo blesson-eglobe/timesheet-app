@@ -138,9 +138,11 @@ export const TimesheetReviewModal: React.FC<TimesheetReviewModalProps> = ({ appr
                   <Avatar initials={data.approval.employee.initials} color={data.approval.employee.color} size="lg" />
                   <div>
                     <div className="review-modal__user-name">{data.approval.employee.name}</div>
-                    <div className="review-modal__user-sub">
-                      {data.approval.employee.designation} {data.approval.employee.department && `· ${data.approval.employee.department}`}
-                    </div>
+                    {data.approval.employee.designation && (
+                      <div className="review-modal__user-sub">
+                        {data.approval.employee.designation}
+                      </div>
+                    )}
                     <div className="review-modal__user-date">
                       Date: <strong>{data.approval.submittedDate || data.approval.weekStart}</strong>
                     </div>
@@ -203,9 +205,12 @@ export const TimesheetReviewModal: React.FC<TimesheetReviewModalProps> = ({ appr
                               </span>
                             </td>
                             <td>
-                              <div>{log.taskName}</div>
-                              {log.taskDescription && (
-                                <div className="review-modal__subtitle">{log.taskDescription}</div>
+                              <div style={{ fontWeight: 500, color: '#0f172a' }}>{log.taskName}</div>
+                              {log.taskDescription && log.taskDescription.trim() && log.taskDescription !== '<p></p>' && (
+                                <div
+                                  className="rich-text-content review-modal__task-desc"
+                                  dangerouslySetInnerHTML={{ __html: log.taskDescription }}
+                                />
                               )}
                             </td>
                             <td style={{ textAlign: 'right', fontWeight: 600 }}>

@@ -414,7 +414,17 @@ export const WorkLogs: React.FC = () => {
 
                   {/* Task (First Column) */}
                   <div className="wl-panel__col wl-panel__col--task">
-                    <div className="wl-panel__task-name">{log.taskName}</div>
+                    <div
+                      className="wl-panel__task-name wl-panel__task-name--link"
+                      onClick={() => {
+                        setEditingLog(log);
+                        setIsReadOnlyDrawer(isLocked);
+                        setShowDrawer(true);
+                      }}
+                      title={isLocked ? "View task details (Read-only)" : "Edit task log in drawer"}
+                    >
+                      {log.taskName}
+                    </div>
                   </div>
 
                   {/* Project (Second Column) */}

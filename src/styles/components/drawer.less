@@ -85,12 +85,26 @@
 	&__input {
 		width: 100%;
 		.input-base();
+		&:disabled {
+			background-color: #f8fafc;
+			color: #1e293b;
+			border-color: #e2e8f0;
+			cursor: default;
+			opacity: 1;
+		}
 	}
 
 	&__select {
 		width: 100%;
 		.input-base();
 		cursor: pointer;
+		&:disabled {
+			background-color: #f8fafc;
+			color: #1e293b;
+			border-color: #e2e8f0;
+			cursor: default;
+			opacity: 1;
+		}
 	}
 
 	&__textarea {
@@ -109,6 +123,13 @@
 		&:focus {
 			border-color: @color-primary;
 			box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+		}
+		&:disabled {
+			background-color: #f8fafc;
+			color: #1e293b;
+			border-color: #e2e8f0;
+			cursor: default;
+			opacity: 1;
 		}
 	}
 }

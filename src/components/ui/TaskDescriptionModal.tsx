@@ -27,13 +27,8 @@ export const TaskDescriptionModal: React.FC<TaskDescriptionModalProps> = ({ log,
       <div className="modal task-desc-modal__panel">
         {/* Header */}
         <div className="task-desc-modal__header">
-          <div>
-            <div className="task-desc-modal__title">
-              Task Description
-            </div>
-            <div className="task-desc-modal__subtitle">
-              {log.taskName} {log.projectName ? `• ${log.projectName}` : ''}
-            </div>
+          <div className="task-desc-modal__title">
+            Task Description
           </div>
           <button
             type="button"
