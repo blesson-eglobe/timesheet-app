@@ -8,7 +8,8 @@ const formatDashboardProject = (p: Record<string, unknown>) => {
 				? p["actual_logged_hours"]
 				: p["logged_hours"]
 		) || 0;
-	const hasBudget = totalHours > 0;
+	const isInternal = p["project_type"] === "Internal" || p["id"] === "internal" || String(p["name"]).toLowerCase() === "internal";
+	const hasBudget = totalHours > 0 && !isInternal;
 	const totalTasks = Number(p["total_tasks"]) || 0;
 	const completedTasks = Number(p["completed_tasks"]) || 0;
 	const dbProgress = Number(p["progress"]) || 0;
@@ -73,7 +74,8 @@ export const dashboardService = {
 		);
 		const dayMap: Record<string, number> = {};
 		for (const r of weekRes.rows as Record<string, unknown>[]) {
-			dayMap[r["date"] as string] = Number(r["hours"]);
+			const dStr = String(r["date"] || "").split("T")[0];
+			dayMap[dStr] = Number(r["hours"]);
 		}
 		const days = ["MON", "TUE", "WED", "THU", "FRI"];
 		const weekHours = days.map((day, i) => {

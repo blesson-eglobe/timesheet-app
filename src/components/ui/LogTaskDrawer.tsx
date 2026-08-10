@@ -200,12 +200,7 @@ export const LogTaskDrawer: React.FC<DrawerProps> = ({
 	};
 
 	return (
-		<div
-			className="drawer-overlay"
-			onClick={(e) => {
-				if (e.target === e.currentTarget) onClose();
-			}}
-		>
+		<div className="drawer-overlay">
 			<div className="drawer">
 				<div className="drawer__header">
 					<span className="drawer__header-title">

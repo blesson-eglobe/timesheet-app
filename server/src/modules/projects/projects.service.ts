@@ -7,7 +7,8 @@ const formatProject = (p: Record<string, unknown>, members: unknown[]) => {
   const managers = typedMembers.filter(m => m['role'] === 'manager');
   const total = Number(p['estimated_hours']) || 0;
   const logged = Number(p['actual_logged_hours'] !== undefined ? p['actual_logged_hours'] : p['logged_hours']) || 0;
-  const hasBudget = total > 0;
+  const isInternal = p['project_type'] === 'Internal' || p['id'] === 'internal' || String(p['name']).toLowerCase() === 'internal';
+  const hasBudget = total > 0 && !isInternal;
   const totalTasks = Number(p['total_tasks']) || 0;
   const completedTasks = Number(p['completed_tasks']) || 0;
   const dbProgress = Number(p['progress']) || 0;
