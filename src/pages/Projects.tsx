@@ -363,14 +363,14 @@ export const Projects: React.FC = () => {
 										/>
 										<div>
 											<div className="projects__card-meta-hours">
-												{p.loggedHours}h / {p.totalHours}h
+												{p.totalHours > 0
+													? `${p.loggedHours}h / ${p.totalHours}h`
+													: `${p.loggedHours}h logged`}
 											</div>
 											<div className="projects__card-meta-days">
-												{Math.max(
-													0,
-													Math.floor((p.totalHours - p.loggedHours) / 8),
-												)}
-												d left
+												{p.totalHours > 0
+													? `${Math.max(0, Math.floor((p.totalHours - p.loggedHours) / 8))}d left`
+													: "No budget limit"}
 											</div>
 										</div>
 									</div>
@@ -563,10 +563,17 @@ export const Projects: React.FC = () => {
 												<span className="projects__table-hours-val">
 													{p.loggedHours}h
 												</span>
-												<span className="projects__table-hours-total">
-													{" "}
-													/ {p.totalHours}h
-												</span>
+												{p.totalHours > 0 ? (
+													<span className="projects__table-hours-total">
+														{" "}
+														/ {p.totalHours}h
+													</span>
+												) : (
+													<span className="projects__table-hours-total" style={{ fontSize: 11, color: '#9ca3af' }}>
+														{" "}
+														(No budget)
+													</span>
+												)}
 											</td>
 											<td>
 												<AvatarStack

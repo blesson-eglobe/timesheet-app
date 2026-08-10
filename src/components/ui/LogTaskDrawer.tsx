@@ -209,7 +209,7 @@ export const LogTaskDrawer: React.FC<DrawerProps> = ({
 			<div className="drawer">
 				<div className="drawer__header">
 					<span className="drawer__header-title">
-						{editingLog ? "Edit Task Log" : "Log Task"}
+						{isReadOnly ? "Task View" : editingLog ? "Edit Task Log" : "Log Task"}
 					</span>
 					<button className="drawer__header-close" onClick={onClose}>
 						<svg

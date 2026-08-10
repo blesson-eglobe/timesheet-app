@@ -8,11 +8,26 @@ const formatDashboardProject = (p: Record<string, unknown>) => {
 				? p["actual_logged_hours"]
 				: p["logged_hours"]
 		) || 0;
-	const rawProgress = totalHours > 0 ? (loggedHours / totalHours) * 100 : 0;
-	const progress =
-		rawProgress > 0 && rawProgress < 1
+	const hasBudget = totalHours > 0;
+	const totalTasks = Number(p["total_tasks"]) || 0;
+	const completedTasks = Number(p["completed_tasks"]) || 0;
+	const dbProgress = Number(p["progress"]) || 0;
+
+	let progress = 0;
+	if (p["status"] === "Completed") {
+		progress = 100;
+	} else if (hasBudget) {
+		const rawProgress = (loggedHours / totalHours) * 100;
+		progress = rawProgress > 0 && rawProgress < 1
 			? Math.round(rawProgress * 10) / 10
 			: Math.min(100, Math.round(rawProgress));
+	} else if (totalTasks > 0 && completedTasks > 0) {
+		progress = Math.round((completedTasks / totalTasks) * 100);
+	} else if (loggedHours > 0) {
+		progress = dbProgress > 0 ? dbProgress : Math.min(95, Math.max(15, Math.round(loggedHours * 10)));
+	} else {
+		progress = dbProgress;
+	}
 
 	return {
 		id: p["id"],
@@ -22,6 +37,7 @@ const formatDashboardProject = (p: Record<string, unknown>) => {
 		progress,
 		totalHours,
 		loggedHours,
+		hasBudget,
 		dueDate: p["end_date"]
 			? new Date(p["end_date"] as string).toLocaleDateString("en-US", {
 					month: "short",
@@ -77,7 +93,9 @@ export const dashboardService = {
 		// Assigned projects (strictly projects where user is in project_members)
 		const projectsRes = await query(
 			`SELECT p.id, p.name, p.status, p.priority, p.progress, p.estimated_hours, p.logged_hours, p.end_date,
-              COALESCE((SELECT SUM(wl.hours) FROM work_logs wl WHERE wl.project_id = p.id), 0) AS actual_logged_hours
+              COALESCE((SELECT SUM(wl.hours) FROM work_logs wl WHERE wl.project_id = p.id), 0) AS actual_logged_hours,
+              COALESCE((SELECT COUNT(wl.id) FROM work_logs wl WHERE wl.project_id = p.id), 0) AS total_tasks,
+              COALESCE((SELECT COUNT(CASE WHEN wl.task_status = 'Completed' OR wl.status = 'Approved' THEN 1 END) FROM work_logs wl WHERE wl.project_id = p.id), 0) AS completed_tasks
        FROM projects p JOIN project_members pm ON pm.project_id = p.id
        WHERE pm.user_id = $1 ORDER BY p.updated_at DESC LIMIT 3`,
 			[userId],
@@ -177,7 +195,9 @@ export const dashboardService = {
 		// Assigned projects (Manager's own projects or all for Admin)
 		const projectsRes = await query(
 			`SELECT p.id, p.name, p.status, p.priority, p.progress, p.estimated_hours, p.logged_hours, p.end_date,
-              COALESCE((SELECT SUM(wl.hours) FROM work_logs wl WHERE wl.project_id = p.id), 0) AS actual_logged_hours
+              COALESCE((SELECT SUM(wl.hours) FROM work_logs wl WHERE wl.project_id = p.id), 0) AS actual_logged_hours,
+              COALESCE((SELECT COUNT(wl.id) FROM work_logs wl WHERE wl.project_id = p.id), 0) AS total_tasks,
+              COALESCE((SELECT COUNT(CASE WHEN wl.task_status = 'Completed' OR wl.status = 'Approved' THEN 1 END) FROM work_logs wl WHERE wl.project_id = p.id), 0) AS completed_tasks
        FROM projects p ${userRole === 'admin' ? "" : "JOIN project_members pm ON pm.project_id = p.id"}
        WHERE 1=1 ${userRole === 'admin' ? "" : "AND pm.user_id = $1"} ORDER BY p.updated_at DESC LIMIT 3`,
 			userRole === 'admin' ? [] : [managerId],

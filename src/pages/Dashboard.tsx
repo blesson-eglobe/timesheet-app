@@ -428,7 +428,9 @@ const EmployeeDashboard: React.FC = () => {
 															Due {formatDisplayDate(p.dueDate) || "N/A"}
 														</span>
 														<span className="dashboard__project-item-hours">
-															{p.loggedHours}h / {p.totalHours}h
+															{p.totalHours > 0
+																? `${p.loggedHours}h / ${p.totalHours}h`
+																: `${p.loggedHours}h logged`}
 														</span>
 													</div>
 												</div>
@@ -909,7 +911,9 @@ const ManagerDashboard: React.FC = () => {
 															Due {formatDisplayDate(p.dueDate) || "N/A"}
 														</span>
 														<span className="dashboard__project-item-hours">
-															{p.loggedHours}h / {p.totalHours}h
+															{p.totalHours > 0
+																? `${p.loggedHours}h / ${p.totalHours}h`
+																: `${p.loggedHours}h logged`}
 														</span>
 													</div>
 												</div>
@@ -1399,7 +1403,9 @@ const CEODashboard: React.FC = () => {
 										>
 											<span>Due {formatDisplayDate(p.dueDate) || "N/A"}</span>
 											<span>
-												{p.loggedHours}h / {p.totalHours}h logged
+												{p.totalHours > 0
+													? `${p.loggedHours}h / ${p.totalHours}h logged`
+													: `${p.loggedHours}h logged`}
 											</span>
 										</div>
 									</div>

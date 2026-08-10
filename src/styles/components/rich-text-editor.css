@@ -1,3 +1,48 @@
+.rich-text-content {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #334155;
+  word-break: break-word;
+}
+.rich-text-content p {
+  margin-bottom: 8px;
+}
+.rich-text-content p:last-child {
+  margin-bottom: 0;
+}
+.rich-text-content ul {
+  list-style-type: disc !important;
+  padding-left: 22px !important;
+  margin: 6px 0 8px !important;
+}
+.rich-text-content ul:last-child {
+  margin-bottom: 0 !important;
+}
+.rich-text-content ol {
+  list-style-type: decimal !important;
+  padding-left: 22px !important;
+  margin: 6px 0 8px !important;
+}
+.rich-text-content ol:last-child {
+  margin-bottom: 0 !important;
+}
+.rich-text-content li {
+  margin-bottom: 6px !important;
+  padding-left: 4px !important;
+  line-height: 1.55 !important;
+}
+.rich-text-content li:last-child {
+  margin-bottom: 0 !important;
+}
+.rich-text-content strong,
+.rich-text-content b {
+  font-weight: 600;
+  color: #0f172a;
+}
+.rich-text-content em,
+.rich-text-content i {
+  font-style: italic;
+}
 .rich-text-editor {
   border: 1px solid #cbd5e1;
   border-radius: 8px;

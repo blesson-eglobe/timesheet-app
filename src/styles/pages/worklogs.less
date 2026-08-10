@@ -815,6 +815,14 @@
 		overflow-wrap: anywhere;
 		white-space: normal;
 		line-height: 1.35;
+		cursor: pointer;
+		transition: color 0.15s ease, text-decoration 0.15s ease;
+
+		&:hover,
+		&--link:hover {
+			color: @color-primary;
+			text-decoration: underline;
+		}
 	}
 
 	// ── Ticket chips ──────────────────────────────────────────────────────────

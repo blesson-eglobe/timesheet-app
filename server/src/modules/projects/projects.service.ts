@@ -7,10 +7,27 @@ const formatProject = (p: Record<string, unknown>, members: unknown[]) => {
   const managers = typedMembers.filter(m => m['role'] === 'manager');
   const total = Number(p['estimated_hours']) || 0;
   const logged = Number(p['actual_logged_hours'] !== undefined ? p['actual_logged_hours'] : p['logged_hours']) || 0;
-  const rawProgress = total > 0 ? (logged / total) * 100 : 0;
-  const computedProgress = rawProgress > 0 && rawProgress < 1
-    ? Math.round(rawProgress * 10) / 10
-    : Math.min(100, Math.round(rawProgress));
+  const hasBudget = total > 0;
+  const totalTasks = Number(p['total_tasks']) || 0;
+  const completedTasks = Number(p['completed_tasks']) || 0;
+  const dbProgress = Number(p['progress']) || 0;
+
+  let progress = 0;
+  if (p['status'] === 'Completed') {
+    progress = 100;
+  } else if (hasBudget) {
+    const rawProgress = (logged / total) * 100;
+    progress = rawProgress > 0 && rawProgress < 1
+      ? Math.round(rawProgress * 10) / 10
+      : Math.min(100, Math.round(rawProgress));
+  } else if (totalTasks > 0 && completedTasks > 0) {
+    progress = Math.round((completedTasks / totalTasks) * 100);
+  } else if (logged > 0) {
+    progress = dbProgress > 0 ? dbProgress : Math.min(95, Math.max(15, Math.round(logged * 10)));
+  } else {
+    progress = dbProgress;
+  }
+
   return {
     id: p['id'],
     name: p['name'],
@@ -21,7 +38,8 @@ const formatProject = (p: Record<string, unknown>, members: unknown[]) => {
     projectType: p['project_type'] || 'Billable',
     totalHours: total,
     loggedHours: logged,
-    progress: computedProgress,
+    hasBudget,
+    progress,
     dueDate: p['end_date'] ? new Date(p['end_date'] as string).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) : '',
     startDate: p['start_date'] ? String(p['start_date']).split('T')[0] : '',
     endDate: p['end_date'] ? String(p['end_date']).split('T')[0] : '',
@@ -62,7 +80,11 @@ export const projectsService = {
       /* ignore if exists */
     }
 
-    let sql = `SELECT p.*, COALESCE((SELECT SUM(wl.hours) FROM work_logs wl WHERE wl.project_id = p.id), 0) AS actual_logged_hours FROM projects p WHERE 1=1`;
+    let sql = `SELECT p.*,
+       COALESCE((SELECT SUM(wl.hours) FROM work_logs wl WHERE wl.project_id = p.id), 0) AS actual_logged_hours,
+       COALESCE((SELECT COUNT(wl.id) FROM work_logs wl WHERE wl.project_id = p.id), 0) AS total_tasks,
+       COALESCE((SELECT COUNT(CASE WHEN wl.task_status = 'Completed' OR wl.status = 'Approved' THEN 1 END) FROM work_logs wl WHERE wl.project_id = p.id), 0) AS completed_tasks
+     FROM projects p WHERE 1=1`;
     const params: unknown[] = [];
     let idx = 1;
     if (search) { sql += ` AND p.name LIKE $${idx++}`; params.push(`%${search}%`); }
@@ -92,7 +114,11 @@ export const projectsService = {
   },
 
   async getById(id: string) {
-    const res = await query('SELECT p.*, COALESCE((SELECT SUM(wl.hours) FROM work_logs wl WHERE wl.project_id = p.id), 0) AS actual_logged_hours FROM projects p WHERE p.id=$1', [id]);
+    const res = await query(`SELECT p.*,
+       COALESCE((SELECT SUM(wl.hours) FROM work_logs wl WHERE wl.project_id = p.id), 0) AS actual_logged_hours,
+       COALESCE((SELECT COUNT(wl.id) FROM work_logs wl WHERE wl.project_id = p.id), 0) AS total_tasks,
+       COALESCE((SELECT COUNT(CASE WHEN wl.task_status = 'Completed' OR wl.status = 'Approved' THEN 1 END) FROM work_logs wl WHERE wl.project_id = p.id), 0) AS completed_tasks
+     FROM projects p WHERE p.id=$1`, [id]);
     const p = res.rows[0] as Record<string, unknown>;
     if (!p) throw createError('Project not found', 404, 'NOT_FOUND');
     const members = await getMembers(id);
