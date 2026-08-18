@@ -15,6 +15,175 @@ import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 import { WeekBars } from "../components/ui/Charts";
 import { EmptyState } from "../components/ui/EmptyState";
 
+// ─── SVG Progress Ring ──────────────────────────────────────────────────────────
+const ProjectProgressRing: React.FC<{
+	progress: number;
+	progressMode: "budget" | "activity" | "none";
+	status: string;
+	size?: number;
+}> = ({ progress, progressMode, status, size = 56 }) => {
+	const strokeWidth = 4;
+	const radius = (size - strokeWidth) / 2;
+	const circumference = 2 * Math.PI * radius;
+	const safeProgress = Math.max(0, Math.min(100, progress));
+	const offset = circumference - (safeProgress / 100) * circumference;
+
+	const getStrokeColor = () => {
+		if (status === "Completed") return "#22c55e";
+		if (status === "At Risk") return "#f97316";
+		if (progressMode === "activity") return "#6366f1";
+		return "#3b82f6";
+	};
+
+	const strokeColor = getStrokeColor();
+	const isUnmeasured = progressMode === "activity";
+
+	return (
+		<div
+			className={`dashboard__project-ring${isUnmeasured ? " dashboard__project-ring--activity" : ""}`}
+		>
+			<svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+				{/* Track */}
+				<circle
+					cx={size / 2}
+					cy={size / 2}
+					r={radius}
+					fill="none"
+					stroke="#f3f4f6"
+					strokeWidth={strokeWidth}
+				/>
+				{/* Fill */}
+				<circle
+					cx={size / 2}
+					cy={size / 2}
+					r={radius}
+					fill="none"
+					stroke={strokeColor}
+					strokeWidth={strokeWidth}
+					strokeLinecap="round"
+					strokeDasharray={circumference}
+					strokeDashoffset={offset}
+					style={{
+						transition: "stroke-dashoffset 0.6s ease",
+						transform: "rotate(-90deg)",
+						transformOrigin: "50% 50%",
+					}}
+				/>
+			</svg>
+			<span className="dashboard__project-ring-label" style={{ color: strokeColor }}>
+				{safeProgress}%
+			</span>
+		</div>
+	);
+};
+
+// ─── Project Type Definition ────────────────────────────────────────────────────
+interface DashboardProject {
+	id: string;
+	name: string;
+	status: string;
+	progress: number;
+	progressMode?: "budget" | "activity" | "none";
+	dueDate: string;
+	loggedHours: number;
+	totalHours: number;
+	hasBudget?: boolean;
+}
+
+// ─── Shared Project Card ────────────────────────────────────────────────────────
+const ProjectCard: React.FC<{
+	project: DashboardProject;
+	onClick: () => void;
+}> = ({ project: p, onClick }) => {
+	const accentColor =
+		p.status === "At Risk"
+			? "#f97316"
+			: p.status === "Completed"
+				? "#22c55e"
+				: "#3b82f6";
+
+	const progressMode = p.progressMode || (p.totalHours > 0 ? "budget" : p.loggedHours > 0 ? "activity" : "none");
+
+	const getProgressLabel = () => {
+		if (progressMode === "activity") {
+			return (
+				<span className="dashboard__project-card-activity-tag">
+					<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8">
+						<path d="M8 1.5a5 5 0 015 5v2.5l1 2H2l1-2V6.5a5 5 0 015-5z" />
+						<path d="M6.5 13.5a1.5 1.5 0 003 0" />
+					</svg>
+					Activity-based
+				</span>
+			);
+		}
+		return null;
+	};
+
+	return (
+		<div
+			className="dashboard__project-card"
+			onClick={onClick}
+			style={{ "--accent-color": accentColor } as React.CSSProperties}
+		>
+			<div className="dashboard__project-card-body">
+				<div className="dashboard__project-card-info">
+					<div className="dashboard__project-card-header">
+						<span className="dashboard__project-card-name">{p.name}</span>
+						<Badge variant={statusVariant(p.status)} dot>
+							{p.status}
+						</Badge>
+					</div>
+					<div className="dashboard__project-card-meta">
+						<span className="dashboard__project-card-meta-item">
+							<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+								<rect x="2" y="2.5" width="12" height="11" rx="2" />
+								<path d="M2 6.5h12" />
+								<path d="M5.5 1v3M10.5 1v3" />
+							</svg>
+							{formatDisplayDate(p.dueDate) || "No due date"}
+						</span>
+						<span className="dashboard__project-card-meta-divider" />
+						<span className="dashboard__project-card-meta-item">
+							<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+								<circle cx="8" cy="8" r="6.5" />
+								<polyline points="8 4.5 8 8 10.5 9.5" />
+							</svg>
+							{p.totalHours > 0
+								? `${p.loggedHours}h / ${p.totalHours}h`
+								: p.loggedHours > 0
+									? `${p.loggedHours}h logged`
+									: "No hours yet"}
+						</span>
+					</div>
+					{getProgressLabel()}
+				</div>
+				<ProjectProgressRing
+					progress={p.progress}
+					progressMode={progressMode}
+					status={p.status}
+				/>
+			</div>
+			{/* Bottom progress bar as secondary indicator */}
+			<div className="dashboard__project-card-bar">
+				<ProgressBar
+					value={p.progress}
+					color={
+						p.status === "At Risk"
+							? "orange"
+							: p.status === "Completed"
+								? "green"
+								: progressMode === "activity"
+									? "purple"
+									: "blue"
+					}
+					thickness="thin"
+				/>
+			</div>
+		</div>
+	);
+};
+
+
 // ─── Shared Quick Actions Component ─────────────────────────────────────────────
 const DashboardQuickActions: React.FC = () => {
 	const navigate = useNavigate();
@@ -318,11 +487,13 @@ const EmployeeDashboard: React.FC = () => {
 								onClick={() => navigate("/projects")}
 							>
 								View all{" "}
-								<span style={{ color: "#9ca3af", marginLeft: 4 }}>›</span>
+								<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+									<path d="M6 3l5 5-5 5" />
+								</svg>
 							</span>
 						</div>
 
-						<div style={{ display: "flex", flexDirection: "column" }}>
+						<div className="dashboard__project-card-list">
 							{myProjects.length === 0 ? (
 								<EmptyState
 									icon="projects"
@@ -331,141 +502,13 @@ const EmployeeDashboard: React.FC = () => {
 									compact
 								/>
 							) : (
-								myProjects.map(
-									(p: {
-										id: string;
-										name: string;
-										status: string;
-										progress: number;
-										dueDate: string;
-										loggedHours: number;
-										totalHours: number;
-									}) => {
-										const dotColor =
-											p.status === "At Risk"
-												? "#f97316"
-												: p.status === "Completed"
-													? "#10b981"
-													: "#3b82f6";
-										return (
-											<div
-												className="dashboard__project-item"
-												key={p.id}
-												onClick={() => navigate(`/projects/${p.id}`)}
-												style={{
-													borderTop: "1px solid #f3f4f6",
-													padding: "24px",
-													display: "flex",
-													alignItems: "center",
-													margin: 0,
-													cursor: "pointer",
-												}}
-											>
-												<div
-													style={{
-														flex: 1,
-														position: "relative",
-														paddingLeft: 20,
-														paddingRight: 32,
-													}}
-												>
-													<div
-														className="dashboard__project-item-header"
-														style={{ marginBottom: 12, position: "relative" }}
-													>
-														<div
-															style={{
-																position: "absolute",
-																left: -20,
-																top: "50%",
-																transform: "translateY(-50%)",
-																width: 8,
-																height: 8,
-																borderRadius: "50%",
-																background: dotColor,
-															}}
-														/>
-														<div
-															style={{
-																display: "flex",
-																alignItems: "center",
-																gap: 12,
-															}}
-														>
-															<span className="dashboard__project-item-name">
-																{p.name}
-															</span>
-															<Badge variant={statusVariant(p.status)} dot>
-																{p.status}
-															</Badge>
-														</div>
-													</div>
-
-													<div
-														className="dashboard__project-item-bar"
-														style={{ marginBottom: 8 }}
-													>
-														<ProgressBar
-															value={p.progress}
-															color={
-																p.status === "At Risk"
-																	? "orange"
-																	: p.status === "Completed"
-																		? "green"
-																		: "blue"
-															}
-														/>
-													</div>
-
-													<div
-														className="dashboard__project-item-meta"
-														style={{
-															justifyContent: "space-between",
-															marginBottom: 0,
-														}}
-													>
-														<span className="dashboard__project-item-due">
-															Due {formatDisplayDate(p.dueDate) || "N/A"}
-														</span>
-														<span className="dashboard__project-item-hours">
-															{p.totalHours > 0
-																? `${p.loggedHours}h / ${p.totalHours}h`
-																: `${p.loggedHours}h logged`}
-														</span>
-													</div>
-												</div>
-
-												<div
-													style={{
-														width: 72,
-														textAlign: "center",
-														flexShrink: 0,
-													}}
-												>
-													<div
-														className="dashboard__project-item-pct"
-														style={{
-															fontSize: 15,
-															fontWeight: 700,
-															color: "#111827",
-														}}
-													>
-														{p.progress}%
-													</div>
-													<div
-														style={{
-															fontSize: 11,
-															color: "#9ca3af",
-															marginTop: 2,
-														}}
-													>
-														complete
-													</div>
-												</div>
-											</div>
-										);
-									},
-								)
+								myProjects.map((p: DashboardProject) => (
+									<ProjectCard
+										key={p.id}
+										project={p}
+										onClick={() => navigate(`/projects/${p.id}`)}
+									/>
+								))
 							)}
 						</div>
 					</div>
@@ -801,11 +844,13 @@ const ManagerDashboard: React.FC = () => {
 								onClick={() => navigate("/projects")}
 							>
 								View all{" "}
-								<span style={{ color: "#9ca3af", marginLeft: 4 }}>›</span>
+								<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+									<path d="M6 3l5 5-5 5" />
+								</svg>
 							</span>
 						</div>
 
-						<div style={{ display: "flex", flexDirection: "column" }}>
+						<div className="dashboard__project-card-list">
 							{myProjects.length === 0 ? (
 								<EmptyState
 									icon="projects"
@@ -814,141 +859,13 @@ const ManagerDashboard: React.FC = () => {
 									compact
 								/>
 							) : (
-								myProjects.map(
-									(p: {
-										id: string;
-										name: string;
-										status: string;
-										progress: number;
-										dueDate: string;
-										loggedHours: number;
-										totalHours: number;
-									}) => {
-										const dotColor =
-											p.status === "At Risk"
-												? "#f97316"
-												: p.status === "Completed"
-													? "#10b981"
-													: "#3b82f6";
-										return (
-											<div
-												className="dashboard__project-item"
-												key={p.id}
-												onClick={() => navigate(`/projects/${p.id}`)}
-												style={{
-													borderTop: "1px solid #f3f4f6",
-													padding: "24px",
-													display: "flex",
-													alignItems: "center",
-													margin: 0,
-													cursor: "pointer",
-												}}
-											>
-												<div
-													style={{
-														flex: 1,
-														position: "relative",
-														paddingLeft: 20,
-														paddingRight: 32,
-													}}
-												>
-													<div
-														className="dashboard__project-item-header"
-														style={{ marginBottom: 12, position: "relative" }}
-													>
-														<div
-															style={{
-																position: "absolute",
-																left: -20,
-																top: "50%",
-																transform: "translateY(-50%)",
-																width: 8,
-																height: 8,
-																borderRadius: "50%",
-																background: dotColor,
-															}}
-														/>
-														<div
-															style={{
-																display: "flex",
-																alignItems: "center",
-																gap: 12,
-															}}
-														>
-															<span className="dashboard__project-item-name">
-																{p.name}
-															</span>
-															<Badge variant={statusVariant(p.status)} dot>
-																{p.status}
-															</Badge>
-														</div>
-													</div>
-
-													<div
-														className="dashboard__project-item-bar"
-														style={{ marginBottom: 8 }}
-													>
-														<ProgressBar
-															value={p.progress}
-															color={
-																p.status === "At Risk"
-																	? "orange"
-																	: p.status === "Completed"
-																		? "green"
-																		: "blue"
-															}
-														/>
-													</div>
-
-													<div
-														className="dashboard__project-item-meta"
-														style={{
-															justifyContent: "space-between",
-															marginBottom: 0,
-														}}
-													>
-														<span className="dashboard__project-item-due">
-															Due {formatDisplayDate(p.dueDate) || "N/A"}
-														</span>
-														<span className="dashboard__project-item-hours">
-															{p.totalHours > 0
-																? `${p.loggedHours}h / ${p.totalHours}h`
-																: `${p.loggedHours}h logged`}
-														</span>
-													</div>
-												</div>
-
-												<div
-													style={{
-														width: 72,
-														textAlign: "center",
-														flexShrink: 0,
-													}}
-												>
-													<div
-														className="dashboard__project-item-pct"
-														style={{
-															fontSize: 15,
-															fontWeight: 700,
-															color: "#111827",
-														}}
-													>
-														{p.progress}%
-													</div>
-													<div
-														style={{
-															fontSize: 11,
-															color: "#9ca3af",
-															marginTop: 2,
-														}}
-													>
-														complete
-													</div>
-												</div>
-											</div>
-										);
-									},
-								)
+								myProjects.map((p: DashboardProject) => (
+									<ProjectCard
+										key={p.id}
+										project={p}
+										onClick={() => navigate(`/projects/${p.id}`)}
+									/>
+								))
 							)}
 						</div>
 					</div>

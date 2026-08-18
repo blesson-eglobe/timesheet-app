@@ -1,6 +1,58 @@
 import { query } from '../../config/db';
 
 export const reportsService = {
+  async detailedExport(
+    params: { from?: string; to?: string; scope?: string; empName?: string },
+    userRole: string,
+    requesterId: string,
+  ) {
+    const from = params.from || new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+    const to   = params.to   || new Date().toISOString().slice(0, 10);
+
+    const isElevated = userRole === 'admin' || userRole === 'ceo' || userRole === 'hr';
+    const queryParams: unknown[] = [from, to];
+    let idx = 3;
+    let extraWhere = '';
+
+    if (params.scope === 'self') {
+      extraWhere += ` AND u.id = $${idx++}`;
+      queryParams.push(requesterId);
+    } else if (params.scope === 'employee_single' && params.empName) {
+      extraWhere += ` AND CONCAT(u.first_name, ' ', u.last_name) = $${idx++}`;
+      queryParams.push(params.empName);
+    } else if (!isElevated && userRole === 'manager') {
+      // Manager sees only their project members
+      extraWhere += ` AND EXISTS (SELECT 1 FROM project_members pm WHERE pm.project_id = wl.project_id AND pm.user_id = $${idx++})`;
+      queryParams.push(requesterId);
+    }
+
+    const sql = `SELECT
+        CONCAT(u.first_name, ' ', u.last_name) AS employee_name,
+        u.initials, u.color, u.department, u.designation,
+        wl.date, p.name AS project_name,
+        wl.task_name, wl.hours, wl.status
+      FROM work_logs wl
+      JOIN users u ON u.id = wl.user_id
+      LEFT JOIN projects p ON p.id = wl.project_id
+      WHERE wl.date >= $1 AND wl.date <= $2
+        ${extraWhere}
+      ORDER BY CONCAT(u.first_name, ' ', u.last_name), wl.date DESC`;
+
+    const res = await query(sql, queryParams);
+    return (res.rows as Record<string, unknown>[]).map(r => ({
+      employeeName: String(r['employee_name'] || ''),
+      initials: String(r['initials'] || ''),
+      color: String(r['color'] || '#6366f1'),
+      department: String(r['department'] || ''),
+      designation: String(r['designation'] || ''),
+      date: String(r['date'] || '').split('T')[0],
+      projectName: String(r['project_name'] || 'General'),
+      taskName: String(r['task_name'] || ''),
+      hours: Number(r['hours'] || 0),
+      status: String(r['status'] || ''),
+    }));
+  },
+
   async hoursReport(params: { from?: string; to?: string; userId?: string }, userRole: string, requesterId: string) {
     const from = params.from || new Date(Date.now() - 180 * 86400000).toISOString().slice(0, 10);
     const to   = params.to   || new Date().toISOString().slice(0, 10);

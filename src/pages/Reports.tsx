@@ -14,6 +14,7 @@ import {
 	GroupedBarChart,
 	UtilBars,
 } from "../components/ui/Charts";
+import { reportsApi, type DetailedEntry } from "../api/reports";
 
 type ReportTab = "hours" | "utilization" | "projects" | "export";
 type ExportScope =
@@ -64,6 +65,12 @@ export const Reports: React.FC = () => {
 	const [exportScope, setExportScope] = useState<ExportScope>("self");
 	const [selectedEmp, setSelectedEmp] = useState<string>("");
 	const [selectedProj, setSelectedProj] = useState<string>("");
+
+	// Preview state
+	const [previewOpen, setPreviewOpen] = useState(false);
+	const [previewPage, setPreviewPage] = useState<1 | 2>(1);
+	const [previewLoading, setPreviewLoading] = useState(false);
+	const [previewDetailed, setPreviewDetailed] = useState<DetailedEntry[]>([]);
 
 	const pageSize = 10;
 	const [modalConfig, setModalConfig] = useState<{
@@ -122,6 +129,16 @@ export const Reports: React.FC = () => {
 	const fmtDate = (iso: string) =>
 		iso ? iso.split("-").reverse().join("-") : "";
 
+	// Group detailed entries by employee name
+	const groupByEmployee = (entries: DetailedEntry[]) => {
+		const map = new Map<string, DetailedEntry[]>();
+		for (const e of entries) {
+			if (!map.has(e.employeeName)) map.set(e.employeeName, []);
+			map.get(e.employeeName)!.push(e);
+		}
+		return map;
+	};
+
 	// ── Download helpers ─────────────────────────────────────────────────────
 	const handleDownloadCsv = async () => {
 		if (!exportFrom || !exportTo) {
@@ -134,87 +151,103 @@ export const Reports: React.FC = () => {
 			});
 			return;
 		}
+
+		const filename =
+			exportScope === "self"
+				? `self_timesheet_${currentUser.name.replace(/\s+/g, "_")}_${fmtDate(exportFrom)}_to_${fmtDate(exportTo)}.csv`
+				: `timesheet_report_${fmtDate(exportFrom)}_to_${fmtDate(exportTo)}.csv`;
+
 		try {
-			// Use the server-side CSV endpoint (returns real DB data)
-			const token =
-				localStorage.getItem("auth_token") ||
-				sessionStorage.getItem("auth_token") ||
-				"";
-			const scopeQuery = exportScope ? `&scope=${exportScope}` : "";
-			const res = await fetch(
-				`/api/reports/export?from=${exportFrom}&to=${exportTo}${scopeQuery}`,
-				{
-					headers: { Authorization: `Bearer ${token}` },
-				},
-			);
-			if (!res.ok) throw new Error("Export failed");
-			const blob = await res.blob();
-			const url = URL.createObjectURL(blob);
-			const link = document.createElement("a");
-			link.href = url;
-			const defaultFilename =
-				exportScope === "self"
-					? `self_timesheet_${currentUser.name.replace(/\s+/g, "_")}_${fmtDate(exportFrom)}_to_${fmtDate(exportTo)}.csv`
-					: `timesheet_report_${fmtDate(exportFrom)}_to_${fmtDate(exportTo)}.csv`;
-			link.download = defaultFilename;
-			document.body.appendChild(link);
-			link.click();
-			document.body.removeChild(link);
-			URL.revokeObjectURL(url);
-		} catch {
-			// Fallback: build CSV from current in-memory data
+			// ── Section 1: Summary ──────────────────────────────────────────
 			let targetRows = employeeReport;
 			if (exportScope === "self") {
 				targetRows = employeeReport.filter(
 					(r) => r.name.toLowerCase() === currentUser.name.toLowerCase(),
 				);
-				if (targetRows.length === 0) {
-					targetRows = [
-						{
-							name: currentUser.name,
-							department: currentUser.department || "Staff",
-							designation: currentUser.designation || "Employee",
-							totalHours: 40,
-							projects: 1,
-							utilization: 85,
-						},
-					];
-				}
+				if (targetRows.length === 0)
+					targetRows = [{ name: currentUser.name, department: currentUser.department || "Staff", designation: currentUser.designation || "Employee", totalHours: 40, projects: 1, utilization: 85 }];
 			} else if (exportScope === "employee_single" && selectedEmp) {
 				targetRows = employeeReport.filter(
 					(r) => r.name.toLowerCase() === selectedEmp.toLowerCase(),
 				);
 			}
 
-			const rows = targetRows.map((r) =>
-				[
-					r.name,
-					r.department || "Staff",
-					r.designation || "Employee",
-					fmtDate(exportFrom),
-					fmtDate(exportTo),
-					`${r.totalHours}h`,
-					`${r.utilization}%`,
-				].join(","),
-			);
-			const csv = [
-				"Employee Name,Department,Designation,Date From,Date To,Total Hours,Utilization",
-				...rows,
-			].join("\n");
+			const summarySection = [
+				`=== SECTION 1: SUMMARY — Period: ${fmtDate(exportFrom)} to ${fmtDate(exportTo)} ===`,
+				"Employee Name,Department,Designation,Total Hours,Projects,Utilization",
+				...targetRows.map((r) =>
+					[
+						`"${r.name}"`,
+						`"${r.department || "Staff"}"`,
+						`"${r.designation || "Employee"}"`,
+						`${Math.round((r.totalHours || 0) * 100) / 100}`,
+						`${r.projects || 0}`,
+						`${r.utilization || 0}%`,
+					].join(",")
+				),
+				"", // blank separator row
+				`=== PROJECT SUMMARY ===`,
+				"Project,Budgeted Hours,Logged Hours,Remaining,Health",
+				...projectReport.map((p) => {
+					const used = p.utilizationPct || Math.round(((p.logged || 0) / Math.max(1, p.budgeted || 1)) * 100);
+					const health = p.status || (used > 100 ? "Over Budget" : used > 85 ? "At Risk" : "On Track");
+					return [
+						`"${p.name}"`,
+						`${p.budgeted || 0}`,
+						`${p.logged || 0}`,
+						`${Math.max(0, (p.budgeted || 0) - (p.logged || 0))}`,
+						`"${health}"`,
+					].join(",");
+				}),
+			];
+
+			// ── Section 2: Detailed timesheet ───────────────────────────────
+			let detailedEntries: DetailedEntry[] = [];
+			try {
+				detailedEntries = await reportsApi.getDetailed({
+					from: exportFrom,
+					to: exportTo,
+					scope: exportScope,
+					empName: exportScope === "employee_single" ? selectedEmp : undefined,
+				});
+			} catch { /* use empty if API unreachable */ }
+
+			const detailSection = [
+				"",
+				`=== SECTION 2: DETAILED TIMESHEET — Period: ${fmtDate(exportFrom)} to ${fmtDate(exportTo)} ===`,
+				"Employee,Department,Date,Project,Task,Hours,Status",
+				...detailedEntries.map((e) =>
+					[
+						`"${e.employeeName}"`,
+						`"${e.department}"`,
+						`"${fmtDate(e.date)}"`,
+						`"${e.projectName}"`,
+						`"${e.taskName.replace(/"/g, "'")}"`,
+						`${e.hours}`,
+						`"${e.status}"`,
+					].join(",")
+				),
+			];
+
+			const csv = [...summarySection, ...detailSection].join("\n");
 			const link = document.createElement("a");
 			link.href = `data:text/csv;charset=utf-8,${encodeURIComponent(csv)}`;
-			const defaultFilename =
-				exportScope === "self"
-					? `self_timesheet_${currentUser.name.replace(/\s+/g, "_")}_${fmtDate(exportFrom)}_to_${fmtDate(exportTo)}.csv`
-					: `timesheet_report_${fmtDate(exportFrom)}_to_${fmtDate(exportTo)}.csv`;
-			link.download = defaultFilename;
+			link.download = filename;
 			document.body.appendChild(link);
 			link.click();
 			document.body.removeChild(link);
+		} catch {
+			setModalConfig({
+				isOpen: true,
+				title: "Export Failed",
+				message: "Could not generate the CSV export. Please try again.",
+				type: "alert",
+				onConfirm: () => setModalConfig(null),
+			});
 		}
 	};
 
-	const handleDownloadPdf = () => {
+	const handleDownloadPdf = async () => {
 		if (!exportFrom || !exportTo) {
 			setModalConfig({
 				isOpen: true,
@@ -232,16 +265,7 @@ export const Reports: React.FC = () => {
 				(r) => r.name.toLowerCase() === currentUser.name.toLowerCase(),
 			);
 			if (targetEmpReport.length === 0) {
-				targetEmpReport = [
-					{
-						name: currentUser.name,
-						department: currentUser.department || "Staff",
-						designation: currentUser.designation || "Employee",
-						totalHours: 40,
-						projects: 1,
-						utilization: 85,
-					},
-				];
+				targetEmpReport = [{ name: currentUser.name, department: currentUser.department || "Staff", designation: currentUser.designation || "Employee", totalHours: 40, projects: 1, utilization: 85 }];
 			}
 		} else if (exportScope === "employee_single" && selectedEmp) {
 			targetEmpReport = employeeReport.filter(
@@ -249,18 +273,25 @@ export const Reports: React.FC = () => {
 			);
 		}
 
-		// Build HTML table rows from real data
+		// Fetch detailed entries for page 2
+		let detailedEntries: DetailedEntry[] = [];
+		try {
+			detailedEntries = await reportsApi.getDetailed({
+				from: exportFrom,
+				to: exportTo,
+				scope: exportScope,
+				empName: exportScope === "employee_single" ? selectedEmp : undefined,
+			});
+		} catch { /* fallback to empty */ }
+
+		// ── Build Page 1 HTML ─────────────────────────────────────────────────
 		const empRows = targetEmpReport
 			.map((r) => {
 				const util = r.utilization || 0;
-				const utilColor =
-					util >= 85 ? "#16a34a" : util >= 60 ? "#ea580c" : "#dc2626";
+				const utilColor = util >= 85 ? "#16a34a" : util >= 60 ? "#ea580c" : "#dc2626";
 				const hoursRounded = Math.round((r.totalHours || 0) * 100) / 100;
-				return `
-        <tr>
-          <td>${r.name}</td>
-          <td>${r.department || "–"}</td>
-          <td>${r.designation || "–"}</td>
+				return `<tr>
+          <td>${r.name}</td><td>${r.department || "–"}</td><td>${r.designation || "–"}</td>
           <td style="text-align:center">${hoursRounded}h</td>
           <td style="text-align:center">${r.projects}</td>
           <td style="text-align:center;color:${utilColor};font-weight:700">${util}%</td>
@@ -270,20 +301,10 @@ export const Reports: React.FC = () => {
 
 		const projRows = projectReport
 			.map((p) => {
-				const used =
-					p.utilizationPct ||
-					Math.round(((p.logged || 0) / Math.max(1, p.budgeted || 1)) * 100);
-				const health =
-					p.status ||
-					(used > 100 ? "Over Budget" : used > 85 ? "At Risk" : "On Track");
-				const hc =
-					health === "On Track"
-						? "#16a34a"
-						: health === "At Risk"
-							? "#ea580c"
-							: "#dc2626";
-				return `
-        <tr>
+				const used = p.utilizationPct || Math.round(((p.logged || 0) / Math.max(1, p.budgeted || 1)) * 100);
+				const health = p.status || (used > 100 ? "Over Budget" : used > 85 ? "At Risk" : "On Track");
+				const hc = health === "On Track" ? "#16a34a" : health === "At Risk" ? "#ea580c" : "#dc2626";
+				return `<tr>
           <td>${p.name}</td>
           <td style="text-align:center">${p.budgeted || 0}h</td>
           <td style="text-align:center;color:#4f46e5;font-weight:700">${p.logged || 0}h</td>
@@ -293,107 +314,135 @@ export const Reports: React.FC = () => {
 			})
 			.join("");
 
-		const rawTotalHrs = employeeReport.reduce(
-			(s, r) => s + (r.totalHours || 0),
-			0,
-		);
-		const totalHrs = Math.round(rawTotalHrs * 100) / 100;
+		const totalHrs = Math.round(employeeReport.reduce((s, r) => s + (r.totalHours || 0), 0) * 100) / 100;
 		const avgUtil = employeeReport.length
-			? Math.round(
-					employeeReport.reduce((s, e) => s + (e.utilization || 0), 0) /
-						employeeReport.length,
-				)
+			? Math.round(employeeReport.reduce((s, e) => s + (e.utilization || 0), 0) / employeeReport.length)
 			: 0;
-		const generatedAt = new Date().toLocaleString("en-US", {
-			dateStyle: "long",
-			timeStyle: "short",
-		});
+		const generatedAt = new Date().toLocaleString("en-US", { dateStyle: "long", timeStyle: "short" });
 
-		const html = `<!DOCTYPE html><html lang="en"><head>
-      <meta charset="UTF-8" />
-      <title>Timesheet Report — ${fmtDate(exportFrom)} to ${fmtDate(exportTo)}</title>
-      <style>
+		// ── Build Page 2 HTML: Detailed timesheet ─────────────────────────────
+		const grouped = groupByEmployee(detailedEntries);
+		const detailSections = Array.from(grouped.entries())
+			.map(([empName, entries]) => {
+				const empTotal = entries.reduce((s, e) => s + e.hours, 0);
+				const rows = entries
+					.map(
+						(e) =>
+							`<tr>
+            <td>${fmtDate(e.date)}</td>
+            <td>${e.projectName}</td>
+            <td style="max-width:260px;word-break:break-word">${e.taskName}</td>
+            <td style="text-align:center;font-weight:600">${e.hours}h</td>
+            <td style="text-align:center">
+              <span style="padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:${
+								e.status === "Approved"
+									? "#dcfce7"
+									: e.status === "Rejected"
+										? "#fee2e2"
+										: "#f3f4f6"
+							};color:${
+								e.status === "Approved"
+									? "#16a34a"
+									: e.status === "Rejected"
+										? "#dc2626"
+										: "#6b7280"
+							}">${e.status || "Pending"}</span>
+            </td>
+          </tr>`,
+					)
+					.join("");
+				return `
+          <div style="margin-bottom:28px">
+            <div style="display:flex;align-items:center;justify-content:space-between;background:#f3f4f6;border-radius:8px;padding:10px 14px;margin-bottom:10px">
+              <span style="font-size:13px;font-weight:700;color:#111827">${empName}</span>
+              <span style="font-size:12px;font-weight:600;color:#6366f1">Total: ${Math.round(empTotal * 100) / 100}h</span>
+            </div>
+            <table>
+              <thead><tr>
+                <th>Date</th><th>Project</th><th>Task</th>
+                <th style="text-align:center">Hours</th>
+                <th style="text-align:center">Status</th>
+              </tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>`;
+			})
+			.join("");
+
+		const sharedStyles = `
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #111827; font-size: 13px; padding: 32px 40px; }
         .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; padding-bottom: 16px; border-bottom: 2px solid #e5e7eb; }
         .logo { font-size: 20px; font-weight: 800; color: #6366f1; letter-spacing: -0.5px; }
         .logo span { color: #111827; }
         .meta { font-size: 11px; color: #6b7280; text-align: right; line-height: 1.6; }
-        .period { font-size: 13px; font-weight: 600; color: #4b5563; margin-top: 2px; }
         .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
         .summary-card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px 16px; }
         .summary-card .label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #9ca3af; margin-bottom: 6px; }
         .summary-card .value { font-size: 22px; font-weight: 800; color: #111827; }
         .section-title { font-size: 14px; font-weight: 700; color: #111827; margin: 24px 0 12px; padding-bottom: 6px; border-bottom: 1px solid #e5e7eb; }
-        table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 24px; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 16px; }
         th { background: #f3f4f6; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; padding: 9px 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
         td { padding: 10px 12px; border-bottom: 1px solid #f9fafb; color: #374151; vertical-align: middle; }
         tr:last-child td { border-bottom: none; }
-        tr:hover td { background: #fafbff; }
         .footer { margin-top: 36px; padding-top: 14px; border-top: 1px solid #e5e7eb; font-size: 11px; color: #9ca3af; display: flex; justify-content: space-between; }
-        @media print {
-          body { padding: 20px; }
-          @page { margin: 1cm; size: A4; }
-        }
-      </style>
+        .page-break { page-break-before: always; padding-top: 32px; }
+        @media print { body { padding: 20px; } @page { margin: 1cm; size: A4; } }`;
+
+		const html = `<!DOCTYPE html><html lang="en"><head>
+      <meta charset="UTF-8" />
+      <title>Timesheet Report — ${fmtDate(exportFrom)} to ${fmtDate(exportTo)}</title>
+      <style>${sharedStyles}</style>
     </head><body>
+
+      <!-- PAGE 1: SUMMARY -->
       <div class="header">
-        <div>
-          <div class="logo">eGlobe<span>ITS</span></div>
-          <div style="font-size:12px;color:#6b7280;margin-top:4px">Timesheet Summary Report</div>
-        </div>
-        <div class="meta">
-          <div>Generated: ${generatedAt}</div>
-          <div class="period">Period: ${fmtDate(exportFrom)} — ${fmtDate(exportTo)}</div>
-        </div>
+        <div><div class="logo">eGlobe<span>ITS</span></div>
+          <div style="font-size:12px;color:#6b7280;margin-top:4px">Timesheet Summary Report</div></div>
+        <div class="meta"><div>Generated: ${generatedAt}</div>
+          <div style="font-size:13px;font-weight:600;color:#4b5563;margin-top:2px">Period: ${fmtDate(exportFrom)} — ${fmtDate(exportTo)}</div></div>
       </div>
-
       <div class="summary">
-        <div class="summary-card">
-          <div class="label">Total Hours</div>
-          <div class="value">${totalHrs}h</div>
-        </div>
-        <div class="summary-card">
-          <div class="label">Employees</div>
-          <div class="value">${employeeReport.length}</div>
-        </div>
-        <div class="summary-card">
-          <div class="label">Avg Utilization</div>
-          <div class="value">${avgUtil}%</div>
-        </div>
-        <div class="summary-card">
-          <div class="label">Active Projects</div>
-          <div class="value">${projectReport.length}</div>
-        </div>
+        <div class="summary-card"><div class="label">Total Hours</div><div class="value">${totalHrs}h</div></div>
+        <div class="summary-card"><div class="label">Employees</div><div class="value">${employeeReport.length}</div></div>
+        <div class="summary-card"><div class="label">Avg Utilization</div><div class="value">${avgUtil}%</div></div>
+        <div class="summary-card"><div class="label">Active Projects</div><div class="value">${projectReport.length}</div></div>
       </div>
-
       <div class="section-title">Employee Hours Summary</div>
       <table>
-        <thead><tr>
-          <th>Employee</th><th>Department</th><th>Designation</th>
-          <th style="text-align:center">Total Hours</th>
-          <th style="text-align:center">Projects</th>
-          <th style="text-align:center">Utilization</th>
-        </tr></thead>
+        <thead><tr><th>Employee</th><th>Department</th><th>Designation</th>
+          <th style="text-align:center">Total Hours</th><th style="text-align:center">Projects</th>
+          <th style="text-align:center">Utilization</th></tr></thead>
         <tbody>${empRows || '<tr><td colspan="6" style="text-align:center;color:#9ca3af;padding:20px">No employee data</td></tr>'}</tbody>
       </table>
-
       <div class="section-title">Project Profitability</div>
       <table>
-        <thead><tr>
-          <th>Project</th>
-          <th style="text-align:center">Budgeted</th>
-          <th style="text-align:center">Logged</th>
-          <th style="text-align:center">Remaining</th>
-          <th style="text-align:center">Health</th>
-        </tr></thead>
+        <thead><tr><th>Project</th><th style="text-align:center">Budgeted</th>
+          <th style="text-align:center">Logged</th><th style="text-align:center">Remaining</th>
+          <th style="text-align:center">Health</th></tr></thead>
         <tbody>${projRows || '<tr><td colspan="5" style="text-align:center;color:#9ca3af;padding:20px">No project data</td></tr>'}</tbody>
       </table>
-
       <div class="footer">
         <span>eGlobe ITS — Timesheet Management Platform</span>
-        <span>Page 1</span>
+        <span>Page 1 of 2</span>
       </div>
+
+      <!-- PAGE 2: DETAILED TIMESHEET -->
+      <div class="page-break">
+        <div class="header">
+          <div><div class="logo">eGlobe<span>ITS</span></div>
+            <div style="font-size:12px;color:#6b7280;margin-top:4px">Detailed Timesheet Report</div></div>
+          <div class="meta"><div>Generated: ${generatedAt}</div>
+            <div style="font-size:13px;font-weight:600;color:#4b5563;margin-top:2px">Period: ${fmtDate(exportFrom)} — ${fmtDate(exportTo)}</div></div>
+        </div>
+        <div class="section-title" style="margin-top:0">Per-Employee Daily Timesheet</div>
+        ${detailSections || '<p style="color:#9ca3af;text-align:center;padding:40px 0">No detailed timesheet data for this period.</p>'}
+        <div class="footer">
+          <span>eGlobe ITS — Timesheet Management Platform</span>
+          <span>Page 2 of 2</span>
+        </div>
+      </div>
+
     </body></html>`;
 
 		const w = window.open("", "_blank", "width=900,height=700");
@@ -409,20 +458,37 @@ export const Reports: React.FC = () => {
 		}
 		w.document.write(html);
 		w.document.close();
-		// Trigger print dialog after content loads
-		w.onload = () => {
-			w.focus();
-			w.print();
-		};
-		// Fallback for browsers that fire onload before write
-		setTimeout(() => {
-			try {
-				w.focus();
-				w.print();
-			} catch {
-				/* already triggered */
-			}
-		}, 600);
+		w.onload = () => { w.focus(); w.print(); };
+		setTimeout(() => { try { w.focus(); w.print(); } catch { /* already triggered */ } }, 600);
+	};
+
+	const handlePreview = async () => {
+		if (!exportFrom || !exportTo) {
+			setModalConfig({
+				isOpen: true,
+				title: "Missing Dates",
+				message: "Select a 'From' and 'To' date first.",
+				type: "alert",
+				onConfirm: () => setModalConfig(null),
+			});
+			return;
+		}
+		setPreviewPage(1);
+		setPreviewOpen(true);
+		setPreviewLoading(true);
+		try {
+			const data = await reportsApi.getDetailed({
+				from: exportFrom,
+				to: exportTo,
+				scope: exportScope,
+				empName: exportScope === "employee_single" ? selectedEmp : undefined,
+			});
+			setPreviewDetailed(data);
+		} catch {
+			setPreviewDetailed([]);
+		} finally {
+			setPreviewLoading(false);
+		}
 	};
 
 	const tabs: { key: ReportTab; label: string; icon: React.ReactNode }[] = [
@@ -1273,15 +1339,13 @@ export const Reports: React.FC = () => {
 						{[
 							{
 								fmt: "CSV",
-								title: "Timesheet Export (CSV)",
 								label: "Timesheet Export (CSV)",
-								desc: `Download raw CSV spreadsheet data formatted for ${exportScope === "self" ? "My Self Timesheet" : exportScope.replace("_", " ")}`,
+								desc: `Two-section CSV: Summary + Detailed daily entries for ${exportScope === "self" ? "My Self Timesheet" : exportScope.replace("_", " ")}`,
 							},
 							{
 								fmt: "PDF",
-								title: "Timesheet Summary (PDF)",
-								label: "Timesheet Summary (PDF)",
-								desc: `Generate printable PDF summary report formatted for ${exportScope === "self" ? "My Self Timesheet" : exportScope.replace("_", " ")}`,
+								label: "Timesheet Report (PDF)",
+								desc: `Two-page PDF: Page 1 Summary + Page 2 Detailed timesheet for ${exportScope === "self" ? "My Self Timesheet" : exportScope.replace("_", " ")}`,
 							},
 						].map((item, i) => (
 							<div className="reports__export-row" key={i}>
@@ -1293,6 +1357,20 @@ export const Reports: React.FC = () => {
 									<div className="reports__export-row-desc">{item.desc}</div>
 								</div>
 								<span className="reports__export-fmt">{item.fmt}</span>
+								{/* Preview button */}
+								<button
+									className="reports__export-preview-btn"
+									onClick={handlePreview}
+									disabled={!exportFrom || !exportTo}
+									title="Preview before exporting"
+								>
+									<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8">
+										<ellipse cx="8" cy="8" rx="7" ry="4.5" />
+										<circle cx="8" cy="8" r="2" fill="currentColor" stroke="none" />
+									</svg>
+									Preview
+								</button>
+								{/* Download button */}
 								<button
 									className="reports__export-dl-btn"
 									onClick={() =>
@@ -1302,14 +1380,7 @@ export const Reports: React.FC = () => {
 									}
 									disabled={!exportFrom || !exportTo}
 								>
-									<svg
-										width="13"
-										height="13"
-										viewBox="0 0 16 16"
-										fill="none"
-										stroke="currentColor"
-										strokeWidth="2"
-									>
+									<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
 										<path d="M8 2v8M4 8l4 4 4-4" />
 										<path d="M2 14h12" />
 									</svg>
@@ -1329,6 +1400,235 @@ export const Reports: React.FC = () => {
 					onConfirm={modalConfig.onConfirm}
 					onCancel={() => setModalConfig(null)}
 				/>
+			)}
+
+			{/* ── PREVIEW MODAL ── */}
+			{previewOpen && (
+				<div
+					className="reports__preview-overlay"
+					onClick={(e) => {
+						if (e.target === e.currentTarget) setPreviewOpen(false);
+					}}
+				>
+					<div className="reports__preview-modal">
+						{/* Modal Header */}
+						<div className="reports__preview-modal-header">
+							<div>
+								<div className="reports__preview-modal-title">
+									Timesheet Preview
+								</div>
+								<div className="reports__preview-modal-meta">
+									Period: {fmtDate(exportFrom)} — {fmtDate(exportTo)}
+									{selectedEmp && exportScope === "employee_single" && (
+										<> · {selectedEmp}</>
+									)}
+								</div>
+							</div>
+							<div className="reports__preview-modal-actions">
+								<button
+									className="reports__export-dl-btn"
+									onClick={() => { setPreviewOpen(false); handleDownloadPdf(); }}
+								>
+									<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+										<path d="M8 2v8M4 8l4 4 4-4" /><path d="M2 14h12" />
+									</svg>
+									Download PDF
+								</button>
+								<button
+									className="reports__export-dl-btn"
+									onClick={() => { setPreviewOpen(false); handleDownloadCsv(); }}
+								>
+									<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+										<path d="M8 2v8M4 8l4 4 4-4" /><path d="M2 14h12" />
+									</svg>
+									Download CSV
+								</button>
+								<button
+									className="reports__preview-close-btn"
+									onClick={() => setPreviewOpen(false)}
+									aria-label="Close preview"
+								>
+									<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+										<path d="M2 2l12 12M14 2L2 14" />
+									</svg>
+								</button>
+							</div>
+						</div>
+
+						{/* Page tab switcher */}
+						<div className="reports__preview-page-tabs">
+							<button
+								className={`reports__preview-page-tab${previewPage === 1 ? " reports__preview-page-tab--active" : ""}`}
+								onClick={() => setPreviewPage(1)}
+							>
+								<span className="reports__preview-page-badge">1</span>
+								Summary
+							</button>
+							<button
+								className={`reports__preview-page-tab${previewPage === 2 ? " reports__preview-page-tab--active" : ""}`}
+								onClick={() => setPreviewPage(2)}
+							>
+								<span className="reports__preview-page-badge">2</span>
+								Detailed Timesheet
+							</button>
+						</div>
+
+						{/* Modal Body */}
+						<div className="reports__preview-modal-body">
+							{previewLoading ? (
+								<div className="reports__preview-loading">
+									<div className="reports__preview-spinner" />
+									<span>Loading timesheet data…</span>
+								</div>
+							) : previewPage === 1 ? (
+								/* Page 1: Summary */
+								<>
+									{/* Summary cards */}
+									<div className="reports__preview-summary-grid">
+										{[
+											{ label: "Total Hours", value: `${Math.round(employeeReport.reduce((s, r) => s + (r.totalHours || 0), 0) * 100) / 100}h` },
+											{ label: "Employees", value: employeeReport.length },
+											{ label: "Avg Utilization", value: `${employeeReport.length ? Math.round(employeeReport.reduce((s, e) => s + (e.utilization || 0), 0) / employeeReport.length) : 0}%` },
+											{ label: "Active Projects", value: projectReport.length },
+										].map((c, ci) => (
+											<div key={ci} className="reports__preview-summary-card">
+												<div className="reports__preview-summary-label">{c.label}</div>
+												<div className="reports__preview-summary-value">{c.value}</div>
+											</div>
+										))}
+									</div>
+
+									{/* Employee Hours Summary */}
+									<div className="reports__preview-section-title">Employee Hours Summary</div>
+									<table className="reports__preview-table">
+										<thead>
+											<tr>
+												<th>Employee</th><th>Department</th><th>Designation</th>
+												<th style={{ textAlign: "center" }}>Total Hours</th>
+												<th style={{ textAlign: "center" }}>Projects</th>
+												<th style={{ textAlign: "center" }}>Utilization</th>
+											</tr>
+										</thead>
+										<tbody>
+											{employeeReport.length === 0 ? (
+												<tr><td colSpan={6} className="reports__preview-empty">No employee data</td></tr>
+											) : employeeReport.map((r, ri) => {
+												const util = r.utilization || 0;
+												const uc = util >= 85 ? "#16a34a" : util >= 60 ? "#ea580c" : "#dc2626";
+												return (
+													<tr key={ri}>
+														<td>
+															<div className="reports__table-employee">
+																<div className="reports__table-avatar" style={{ background: r.color || "#6366f1" }}>{r.initials || "U"}</div>
+																<span>{r.name}</span>
+															</div>
+														</td>
+														<td style={{ color: "#6b7280" }}>{r.department || "–"}</td>
+														<td style={{ color: "#6b7280" }}>{r.designation || "–"}</td>
+														<td style={{ textAlign: "center", fontWeight: 600 }}>{Math.round((r.totalHours || 0) * 100) / 100}h</td>
+														<td style={{ textAlign: "center" }}>{r.projects}</td>
+														<td style={{ textAlign: "center", color: uc, fontWeight: 700 }}>{util}%</td>
+													</tr>
+												);
+											})}
+										</tbody>
+									</table>
+
+									{/* Project Profitability */}
+									<div className="reports__preview-section-title">Project Profitability</div>
+									<table className="reports__preview-table">
+										<thead>
+											<tr>
+												<th>Project</th>
+												<th style={{ textAlign: "center" }}>Budgeted</th>
+												<th style={{ textAlign: "center" }}>Logged</th>
+												<th style={{ textAlign: "center" }}>Remaining</th>
+												<th style={{ textAlign: "center" }}>Health</th>
+											</tr>
+										</thead>
+										<tbody>
+											{projectReport.length === 0 ? (
+												<tr><td colSpan={5} className="reports__preview-empty">No project data</td></tr>
+											) : projectReport.map((p, pi) => {
+												const used = p.utilizationPct || Math.round(((p.logged || 0) / Math.max(1, p.budgeted || 1)) * 100);
+												const health = p.status || (used > 100 ? "Over Budget" : used > 85 ? "At Risk" : "On Track");
+												const hb = healthBadge(health);
+												return (
+													<tr key={pi}>
+														<td style={{ fontWeight: 500 }}>{p.name}</td>
+														<td style={{ textAlign: "center" }}>{p.budgeted || 0}h</td>
+														<td style={{ textAlign: "center", color: "#4f46e5", fontWeight: 600 }}>{p.logged || 0}h</td>
+														<td style={{ textAlign: "center" }}>{Math.max(0, (p.budgeted || 0) - (p.logged || 0))}h</td>
+														<td style={{ textAlign: "center" }}>
+															<span className="badge" style={{ background: hb.bg, color: hb.color, border: `1px solid ${hb.border}` }}>{health}</span>
+														</td>
+													</tr>
+												);
+											})}
+										</tbody>
+									</table>
+								</>
+							) : (
+								/* Page 2: Detailed */
+								<>
+									{previewDetailed.length === 0 ? (
+										<div className="reports__preview-empty" style={{ padding: "60px 24px" }}>
+											No detailed timesheet entries for this period.
+										</div>
+									) : (
+										Array.from(groupByEmployee(previewDetailed).entries()).map(([empName, entries]) => {
+											const empTotal = entries.reduce((s, e) => s + e.hours, 0);
+											const emp = entries[0];
+											return (
+												<div key={empName} className="reports__preview-emp-block">
+													<div className="reports__preview-emp-header">
+														<div className="reports__table-employee">
+															<div className="reports__table-avatar" style={{ background: emp.color || "#6366f1" }}>{emp.initials || "U"}</div>
+															<div>
+																<div style={{ fontWeight: 700, fontSize: 13 }}>{empName}</div>
+																<div style={{ fontSize: 11, color: "#6b7280" }}>{emp.department} · {emp.designation}</div>
+															</div>
+														</div>
+														<div className="reports__preview-emp-total">
+															Total: <strong>{Math.round(empTotal * 100) / 100}h</strong>
+														</div>
+													</div>
+													<table className="reports__preview-table">
+														<thead>
+															<tr>
+																<th>Date</th><th>Project</th><th>Task</th>
+																<th style={{ textAlign: "center" }}>Hours</th>
+																<th style={{ textAlign: "center" }}>Status</th>
+															</tr>
+														</thead>
+														<tbody>
+															{entries.map((e, ei) => {
+																const statusBg = e.status === "Approved" ? { bg: "#dcfce7", color: "#16a34a" } : e.status === "Rejected" ? { bg: "#fee2e2", color: "#dc2626" } : { bg: "#f3f4f6", color: "#6b7280" };
+																return (
+																	<tr key={ei}>
+																		<td style={{ whiteSpace: "nowrap" }}>{fmtDate(e.date)}</td>
+																		<td style={{ color: "#4f46e5", fontWeight: 500 }}>{e.projectName}</td>
+																		<td style={{ color: "#374151", maxWidth: 240, wordBreak: "break-word" }}>{e.taskName}</td>
+																		<td style={{ textAlign: "center", fontWeight: 700 }}>{e.hours}h</td>
+																		<td style={{ textAlign: "center" }}>
+																			<span style={{ padding: "2px 8px", borderRadius: 4, fontSize: 10, fontWeight: 700, background: statusBg.bg, color: statusBg.color }}>
+																				{e.status || "Pending"}
+																			</span>
+																		</td>
+																	</tr>
+																);
+															})}
+														</tbody>
+													</table>
+												</div>
+											);
+										})
+									)}
+								</>
+							)}
+						</div>
+					</div>
+				</div>
 			)}
 		</div>
 	);

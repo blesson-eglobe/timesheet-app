@@ -12,20 +12,37 @@ const formatDashboardProject = (p: Record<string, unknown>) => {
 	const hasBudget = totalHours > 0 && !isInternal;
 	const totalTasks = Number(p["total_tasks"]) || 0;
 	const completedTasks = Number(p["completed_tasks"]) || 0;
+	const approvedTasks = Number(p["approved_tasks"]) || 0;
 	const dbProgress = Number(p["progress"]) || 0;
 
 	let progress = 0;
+	let progressMode: "budget" | "activity" | "none" = "none";
+
 	if (p["status"] === "Completed") {
 		progress = 100;
+		progressMode = "budget";
 	} else if (hasBudget) {
+		progressMode = "budget";
 		const rawProgress = (loggedHours / totalHours) * 100;
 		progress = rawProgress > 0 && rawProgress < 1
 			? Math.round(rawProgress * 10) / 10
 			: Math.min(100, Math.round(rawProgress));
 	} else if (totalTasks > 0 && completedTasks > 0) {
+		// No budget but has completed/approved tasks — use task completion ratio
+		progressMode = "activity";
 		progress = Math.round((completedTasks / totalTasks) * 100);
 	} else if (loggedHours > 0) {
-		progress = dbProgress > 0 ? dbProgress : Math.min(95, Math.max(15, Math.round(loggedHours * 10)));
+		// No budget, no completed tasks, but hours are logged — activity-based
+		progressMode = "activity";
+		if (totalTasks > 0 && approvedTasks > 0) {
+			// Use approved logs ratio as progress indicator
+			progress = Math.min(95, Math.round((approvedTasks / totalTasks) * 100));
+		} else if (dbProgress > 0) {
+			progress = dbProgress;
+		} else {
+			// Heuristic: give a base 5% for having any activity, scale with logged hours
+			progress = Math.min(95, Math.max(5, Math.round(loggedHours * 2)));
+		}
 	} else {
 		progress = dbProgress;
 	}
@@ -36,6 +53,7 @@ const formatDashboardProject = (p: Record<string, unknown>) => {
 		status: p["status"],
 		priority: p["priority"],
 		progress,
+		progressMode,
 		totalHours,
 		loggedHours,
 		hasBudget,
@@ -97,7 +115,8 @@ export const dashboardService = {
 			`SELECT p.id, p.name, p.status, p.priority, p.progress, p.estimated_hours, p.logged_hours, p.end_date,
               COALESCE((SELECT SUM(wl.hours) FROM work_logs wl WHERE wl.project_id = p.id), 0) AS actual_logged_hours,
               COALESCE((SELECT COUNT(wl.id) FROM work_logs wl WHERE wl.project_id = p.id), 0) AS total_tasks,
-              COALESCE((SELECT COUNT(CASE WHEN wl.task_status = 'Completed' OR wl.status = 'Approved' THEN 1 END) FROM work_logs wl WHERE wl.project_id = p.id), 0) AS completed_tasks
+              COALESCE((SELECT COUNT(CASE WHEN wl.task_status = 'Completed' OR wl.status = 'Approved' THEN 1 END) FROM work_logs wl WHERE wl.project_id = p.id), 0) AS completed_tasks,
+              COALESCE((SELECT COUNT(CASE WHEN wl.status = 'Approved' THEN 1 END) FROM work_logs wl WHERE wl.project_id = p.id), 0) AS approved_tasks
        FROM projects p JOIN project_members pm ON pm.project_id = p.id
        WHERE pm.user_id = $1 ORDER BY p.updated_at DESC LIMIT 3`,
 			[userId],
@@ -199,7 +218,8 @@ export const dashboardService = {
 			`SELECT p.id, p.name, p.status, p.priority, p.progress, p.estimated_hours, p.logged_hours, p.end_date,
               COALESCE((SELECT SUM(wl.hours) FROM work_logs wl WHERE wl.project_id = p.id), 0) AS actual_logged_hours,
               COALESCE((SELECT COUNT(wl.id) FROM work_logs wl WHERE wl.project_id = p.id), 0) AS total_tasks,
-              COALESCE((SELECT COUNT(CASE WHEN wl.task_status = 'Completed' OR wl.status = 'Approved' THEN 1 END) FROM work_logs wl WHERE wl.project_id = p.id), 0) AS completed_tasks
+              COALESCE((SELECT COUNT(CASE WHEN wl.task_status = 'Completed' OR wl.status = 'Approved' THEN 1 END) FROM work_logs wl WHERE wl.project_id = p.id), 0) AS completed_tasks,
+              COALESCE((SELECT COUNT(CASE WHEN wl.status = 'Approved' THEN 1 END) FROM work_logs wl WHERE wl.project_id = p.id), 0) AS approved_tasks
        FROM projects p ${userRole === 'admin' ? "" : "JOIN project_members pm ON pm.project_id = p.id"}
        WHERE 1=1 ${userRole === 'admin' ? "" : "AND pm.user_id = $1"} ORDER BY p.updated_at DESC LIMIT 3`,
 			userRole === 'admin' ? [] : [managerId],
