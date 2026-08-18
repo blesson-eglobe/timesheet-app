@@ -120,6 +120,7 @@ export const LogTaskDrawer: React.FC<DrawerProps> = ({
 				{
 					id: editingLog.id,
 					data: {
+						projectId: project,
 						taskName: task.trim(),
 						taskDescription,
 						hours: numHours,

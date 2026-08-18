@@ -12,7 +12,7 @@ export const reportsController = {
 
   async exportCsv(req: Request, res: Response, next: NextFunction) {
     try {
-      const { from, to, scope } = req.query as Record<string, string>;
+      const { from, to, scope, empName } = req.query as Record<string, string>;
       const targetUserId = scope === 'self' ? req.user!.id : undefined;
       const data = await reportsService.hoursReport({ from, to, userId: targetUserId }, req.user!.role, req.user!.id);
       const empList = data.employeeReport;
@@ -25,4 +25,17 @@ export const reportsController = {
       res.send(csv);
     } catch (err) { next(err); }
   },
+
+  async exportDetailed(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { from, to, scope, empName } = req.query as Record<string, string>;
+      const data = await reportsService.detailedExport(
+        { from, to, scope, empName },
+        req.user!.role,
+        req.user!.id,
+      );
+      res.json(data);
+    } catch (err) { next(err); }
+  },
 };
+

@@ -10,7 +10,7 @@ export const workLogsApi = {
     tickets?: { ticketNumber: string; ticketUrl?: string; provider?: string }[];
   }) => apiClient.post('/work-logs', data).then(r => r.data),
 
-  update: (id: string, data: Partial<{ taskName: string; taskDescription: string; hours: number; date: string; status: string; taskStatus: string }>) =>
+  update: (id: string, data: Partial<{ projectId: string; taskName: string; taskDescription: string; hours: number; date: string; status: string; taskStatus: string }>) =>
     apiClient.put(`/work-logs/${id}`, data).then(r => r.data),
 
   delete: (id: string) =>

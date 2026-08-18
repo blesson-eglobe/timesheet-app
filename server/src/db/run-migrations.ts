@@ -46,6 +46,15 @@ async function runMigrations() {
     // Ignore if column already exists (ER_DUP_FIELDNAME / 1060)
   }
 
+  try {
+    await pool.query(
+      "ALTER TABLE notifications ADD COLUMN meta VARCHAR(255) NOT NULL DEFAULT ''"
+    );
+    console.log("  ✓ Added missing meta column to notifications table");
+  } catch (err: any) {
+    // Ignore if column already exists
+  }
+
   console.log('✅ Migrations complete.');
   await pool.end();
 }
