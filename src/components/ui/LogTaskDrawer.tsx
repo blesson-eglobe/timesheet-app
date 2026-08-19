@@ -1,11 +1,11 @@
 import React, { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useProjects } from "../../hooks/useProjects";
 import { useCreateWorkLog, useUpdateWorkLog } from "../../hooks/useWorkLogs";
 import { useAppStore } from "../../store/useAppStore";
 import type { TaskStatus } from "../../types";
 import { RichTextEditor } from "./RichTextEditor";
-
-
+import { LoadingSpinner } from "./LoadingSpinner";
 
 interface DrawerProps {
 	onClose: () => void;
@@ -22,11 +22,13 @@ export const LogTaskDrawer: React.FC<DrawerProps> = ({
 	defaultProject,
 	isReadOnly = false,
 }) => {
+	const queryClient = useQueryClient();
 	const { currentUser } = useAppStore();
 	const isUserDisabled = currentUser?.status === 'Disabled';
 	const { data: projects = [] } = useProjects();
 	const createWorkLogMutation = useCreateWorkLog();
 	const updateWorkLogMutation = useUpdateWorkLog();
+	const [isUpdatingList, setIsUpdatingList] = useState(false);
 
 	const todayStr = new Date().toISOString().slice(0, 10);
 	const [project, setProject] = useState(() => {
@@ -89,7 +91,7 @@ export const LogTaskDrawer: React.FC<DrawerProps> = ({
 	};
 
 	const isPending =
-		createWorkLogMutation.isPending || updateWorkLogMutation.isPending;
+		createWorkLogMutation.isPending || updateWorkLogMutation.isPending || isUpdatingList;
 	const isSubmitDisabled =
 		isUserDisabled ||
 		!!fieldErrors.project ||
@@ -115,6 +117,27 @@ export const LogTaskDrawer: React.FC<DrawerProps> = ({
 		}
 
 		const numHours = totalDecimalHours;
+		const refreshQueries = async () => {
+			setIsUpdatingList(true);
+			try {
+				await Promise.all([
+					queryClient.invalidateQueries({ queryKey: ['workLogs'] }),
+					queryClient.invalidateQueries({ queryKey: ['projects'] }),
+					queryClient.invalidateQueries({ queryKey: ['project'] }),
+					queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
+					queryClient.invalidateQueries({ queryKey: ['reports'] }),
+					queryClient.refetchQueries({ queryKey: ['workLogs'] }),
+					queryClient.refetchQueries({ queryKey: ['projects'] }),
+					queryClient.refetchQueries({ queryKey: ['dashboard'] }),
+				]);
+			} catch (e) {
+				console.error(e);
+			} finally {
+				setIsUpdatingList(false);
+				onClose();
+			}
+		};
+
 		if (editingLog) {
 			updateWorkLogMutation.mutate(
 				{
@@ -130,7 +153,7 @@ export const LogTaskDrawer: React.FC<DrawerProps> = ({
 				},
 				{
 					onSuccess: () => {
-						onClose();
+						refreshQueries();
 					},
 					onError: (err: unknown) => {
 						const msg =
@@ -148,18 +171,18 @@ export const LogTaskDrawer: React.FC<DrawerProps> = ({
 					taskDescription,
 					hours: numHours,
 					date,
-					status: "In Progress",
+					status: "Pending",
 					taskStatus,
 					tickets: tickets.map((t) => ({ ticketNumber: t })),
 				},
 				{
 					onSuccess: () => {
-						onClose();
+						refreshQueries();
 					},
 					onError: (err: unknown) => {
 						const msg =
 							(err as { response?: { data?: { message?: string } } })?.response
-								?.data?.message || "Failed to save work log";
+								?.data?.message || "Failed to create work log";
 						setError(msg);
 					},
 				},
@@ -463,6 +486,12 @@ export const LogTaskDrawer: React.FC<DrawerProps> = ({
 					</div>
 				</div>
 				<div className="drawer__footer">
+					{isUpdatingList && (
+						<div style={{ padding: "6px 12px", background: "#eff6ff", borderRadius: 6, fontSize: 12, fontWeight: 500, color: "#1d4ed8", display: "flex", alignItems: "center", gap: 8, marginRight: "auto" }}>
+							<LoadingSpinner inline size="sm" />
+							Updating task list…
+						</div>
+					)}
 					<button
 						type="button"
 						className={isReadOnly ? "btn btn--primary" : "btn btn--ghost"}
@@ -478,15 +507,23 @@ export const LogTaskDrawer: React.FC<DrawerProps> = ({
 							onClick={handleSave}
 							disabled={isSubmitDisabled}
 							style={{
-								opacity: isSubmitDisabled ? 0.5 : 1,
+								opacity: isSubmitDisabled ? 0.6 : 1,
 								cursor: isSubmitDisabled ? "not-allowed" : "pointer",
+								display: "inline-flex",
+								alignItems: "center",
+								gap: 6,
 							}}
 						>
-							{isPending
-								? "Saving…"
-								: editingLog
-									? "Update Entry"
-									: "Save Entry"}
+							{isPending ? (
+								<>
+									<LoadingSpinner inline size="sm" />
+									{isUpdatingList ? "Updating list…" : "Saving…"}
+								</>
+							) : editingLog ? (
+								"Update Entry"
+							) : (
+								"Save Entry"
+							)}
 						</button>
 					)}
 				</div>

@@ -177,7 +177,7 @@ export const workLogsService = {
            progress = CASE
              WHEN p.status = 'Completed' THEN 100
              WHEN p.estimated_hours > 0 AND p.project_type != 'Internal' THEN COALESCE(LEAST(100, ROUND((SELECT COALESCE(SUM(hours), 0) FROM work_logs WHERE project_id = $1) / p.estimated_hours * 100)), 0)
-             ELSE COALESCE(LEAST(100, ROUND((SELECT COUNT(CASE WHEN task_status = 'Completed' OR status = 'Approved' THEN 1 END) FROM work_logs WHERE project_id = $1) / NULLIF((SELECT COUNT(*) FROM work_logs WHERE project_id = $1), 0) * 100)), 0)
+             ELSE COALESCE(LEAST(95, GREATEST(5, ROUND((SELECT COALESCE(SUM(hours), 0) FROM work_logs WHERE project_id = $1) * 5))), 0)
            END,
            updated_at = NOW()
          WHERE p.id = $1`,
@@ -279,35 +279,33 @@ export const workLogsService = {
 
     const projectChanged = newProjectId !== undefined && newProjectId !== old['project_id'];
 
-    if (data.hours !== undefined || data.taskStatus !== undefined || data.status !== undefined || projectChanged) {
-      // Recalculate stats for the new project
+    // Always update project stats and updated_at when a task log is updated
+    await query(
+      `UPDATE projects p SET
+         logged_hours = (SELECT COALESCE(SUM(hours), 0) FROM work_logs WHERE project_id = $1),
+         progress = CASE
+           WHEN p.status = 'Completed' THEN 100
+           WHEN p.estimated_hours > 0 AND p.project_type != 'Internal' THEN COALESCE(LEAST(100, ROUND((SELECT COALESCE(SUM(hours), 0) FROM work_logs WHERE project_id = $1) / p.estimated_hours * 100)), 0)
+           ELSE COALESCE(LEAST(95, GREATEST(5, ROUND((SELECT COALESCE(SUM(hours), 0) FROM work_logs WHERE project_id = $1) * 5))), 0)
+         END,
+         updated_at = NOW()
+       WHERE p.id = $1`,
+      [updated['project_id']]
+    );
+    // If project changed, also recalculate old project stats
+    if (projectChanged) {
       await query(
         `UPDATE projects p SET
            logged_hours = (SELECT COALESCE(SUM(hours), 0) FROM work_logs WHERE project_id = $1),
            progress = CASE
              WHEN p.status = 'Completed' THEN 100
              WHEN p.estimated_hours > 0 AND p.project_type != 'Internal' THEN COALESCE(LEAST(100, ROUND((SELECT COALESCE(SUM(hours), 0) FROM work_logs WHERE project_id = $1) / p.estimated_hours * 100)), 0)
-             ELSE COALESCE(LEAST(100, ROUND((SELECT COUNT(CASE WHEN task_status = 'Completed' OR status = 'Approved' THEN 1 END) FROM work_logs WHERE project_id = $1) / NULLIF((SELECT COUNT(*) FROM work_logs WHERE project_id = $1), 0) * 100)), 0)
+             ELSE COALESCE(LEAST(95, GREATEST(5, ROUND((SELECT COALESCE(SUM(hours), 0) FROM work_logs WHERE project_id = $1) * 5))), 0)
            END,
            updated_at = NOW()
          WHERE p.id = $1`,
-        [updated['project_id']]
+        [old['project_id']]
       );
-      // If project changed, also recalculate old project stats
-      if (projectChanged) {
-        await query(
-          `UPDATE projects p SET
-             logged_hours = (SELECT COALESCE(SUM(hours), 0) FROM work_logs WHERE project_id = $1),
-             progress = CASE
-               WHEN p.status = 'Completed' THEN 100
-               WHEN p.estimated_hours > 0 AND p.project_type != 'Internal' THEN COALESCE(LEAST(100, ROUND((SELECT COALESCE(SUM(hours), 0) FROM work_logs WHERE project_id = $1) / p.estimated_hours * 100)), 0)
-               ELSE COALESCE(LEAST(100, ROUND((SELECT COUNT(CASE WHEN task_status = 'Completed' OR status = 'Approved' THEN 1 END) FROM work_logs WHERE project_id = $1) / NULLIF((SELECT COUNT(*) FROM work_logs WHERE project_id = $1), 0) * 100)), 0)
-             END,
-             updated_at = NOW()
-           WHERE p.id = $1`,
-          [old['project_id']]
-        );
-      }
     }
 
     const pRes = await query('SELECT name FROM projects WHERE id=$1', [updated['project_id']]);
@@ -335,7 +333,7 @@ export const workLogsService = {
          progress = CASE
            WHEN p.status = 'Completed' THEN 100
            WHEN p.estimated_hours > 0 AND p.project_type != 'Internal' THEN COALESCE(LEAST(100, ROUND((SELECT COALESCE(SUM(hours), 0) FROM work_logs WHERE project_id = $1) / p.estimated_hours * 100)), 0)
-           ELSE COALESCE(LEAST(100, ROUND((SELECT COUNT(CASE WHEN task_status = 'Completed' OR status = 'Approved' THEN 1 END) FROM work_logs WHERE project_id = $1) / NULLIF((SELECT COUNT(*) FROM work_logs WHERE project_id = $1), 0) * 100)), 0)
+           ELSE COALESCE(LEAST(95, GREATEST(5, ROUND((SELECT COALESCE(SUM(hours), 0) FROM work_logs WHERE project_id = $1) * 5))), 0)
          END,
          updated_at = NOW()
        WHERE p.id = $1`,

@@ -82,7 +82,7 @@ export const WorkLogs: React.FC = () => {
   const todayStr = new Date().toISOString().slice(0, 10);
   const [modalConfig, setModalConfig] = useState<{ isOpen: boolean; title: string; message: string; type: 'alert' | 'confirm'; onConfirm: () => void } | null>(null);
 
-  const { data: workLogs = [], isLoading } = useWorkLogs({ search });
+  const { data: workLogs = [], isLoading, isFetching } = useWorkLogs({ search });
   const { data: projects = [] } = useProjects();
   const submitWeekMutation = useSubmitWeek();
   const deleteWorkLogMutation = useDeleteWorkLog();
@@ -392,6 +392,11 @@ export const WorkLogs: React.FC = () => {
       {/* ── LIST VIEW ── */}
       {view === 'list' ? (
         <div className="wl-panel">
+          {isFetching && !isLoading && (
+            <div style={{ padding: "8px 16px", background: "#eff6ff", borderBottom: "1px solid #dbeafe", fontSize: 12, fontWeight: 600, color: "#1d4ed8", display: "flex", alignItems: "center", gap: 8 }}>
+              <LoadingSpinner inline size="sm" /> Updating task list…
+            </div>
+          )}
           {/* Column headers */}
           <div className="wl-panel__header">
             <div className="wl-panel__col wl-panel__col--task">TASK</div>

@@ -21,10 +21,10 @@ const formatProject = (p: Record<string, unknown>, members: unknown[]) => {
     progress = rawProgress > 0 && rawProgress < 1
       ? Math.round(rawProgress * 10) / 10
       : Math.min(100, Math.round(rawProgress));
-  } else if (totalTasks > 0 && completedTasks > 0) {
-    progress = Math.round((completedTasks / totalTasks) * 100);
   } else if (logged > 0) {
-    progress = dbProgress > 0 ? dbProgress : Math.min(95, Math.max(15, Math.round(logged * 10)));
+    const hoursProgress = Math.min(95, Math.max(5, Math.round(logged * 5)));
+    const taskProgress = totalTasks > 0 && completedTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+    progress = Math.max(dbProgress, hoursProgress, taskProgress);
   } else {
     progress = dbProgress;
   }
