@@ -575,9 +575,9 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		width: 18px;
-		height: 18px;
-		border-radius: @radius-full;
+		padding: 2px 7px;
+		height: 20px;
+		border-radius: @radius-md;
 		background: @gray-100;
 		font-size: 10px;
 		font-weight: 700;
@@ -586,6 +586,23 @@
 		.reports__preview-page-tab--active & {
 			background: @gray-900;
 			color: @white;
+		}
+	}
+
+	&__preview-count-pill {
+		display: inline-flex;
+		align-items: center;
+		padding: 2px 8px;
+		border-radius: @radius-full;
+		background: #e0e7ff;
+		color: #4338ca;
+		font-size: 11px;
+		font-weight: 600;
+		margin-left: 6px;
+
+		&--zero {
+			background: @gray-100;
+			color: @color-text-muted;
 		}
 	}
 
