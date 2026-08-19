@@ -39,7 +39,7 @@ export const ProjectDetail: React.FC = () => {
   const [isReadOnlyDrawer, setIsReadOnlyDrawer] = useState(false);
   const [selectedMemberLogId, setSelectedMemberLogId] = useState<string | null>(null);
 
-  const { data: project, isLoading } = useProject(id || '');
+  const { data: project, isLoading, isFetching } = useProject(id || '');
 
   const toggleTask = (taskId: string) => {
     setCompletedIds(prev => {
@@ -67,7 +67,7 @@ export const ProjectDetail: React.FC = () => {
       projectId: t.projectId || project?.id,
       projectName: t.projectName || project?.name,
     });
-    setIsReadOnlyDrawer(true);
+    setIsReadOnlyDrawer(false);
     setShowDrawer(true);
   };
 
@@ -316,6 +316,11 @@ export const ProjectDetail: React.FC = () => {
         const paginatedTasks = filtered.slice((taskPage - 1) * taskPageSize, taskPage * taskPageSize);
         return (
           <div className="task-panel">
+            {isFetching && !isLoading && (
+              <div style={{ padding: "8px 16px", background: "#eff6ff", borderBottom: "1px solid #dbeafe", fontSize: 12, fontWeight: 600, color: "#1d4ed8", display: "flex", alignItems: "center", gap: 8 }}>
+                <LoadingSpinner inline size="sm" /> Updating task list…
+              </div>
+            )}
             {/* Filter toolbar */}
             <div className="task-panel__toolbar">
               <div className="task-panel__filters">

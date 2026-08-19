@@ -104,6 +104,14 @@ const ProjectCard: React.FC<{
 
 	const progressMode = p.progressMode || (p.totalHours > 0 ? "budget" : p.loggedHours > 0 ? "activity" : "none");
 
+	const effectiveProgress = p.status === "Completed"
+		? 100
+		: (p.totalHours > 0 && p.hasBudget !== false)
+			? Math.min(100, Math.round((p.loggedHours / p.totalHours) * 100))
+			: p.loggedHours > 0
+				? Math.max(p.progress || 0, Math.min(95, Math.max(5, Math.round(p.loggedHours * 5))))
+				: (p.progress || 0);
+
 	const getProgressLabel = () => {
 		if (progressMode === "activity") {
 			return (
@@ -158,7 +166,7 @@ const ProjectCard: React.FC<{
 					{getProgressLabel()}
 				</div>
 				<ProjectProgressRing
-					progress={p.progress}
+					progress={effectiveProgress}
 					progressMode={progressMode}
 					status={p.status}
 				/>
@@ -166,7 +174,7 @@ const ProjectCard: React.FC<{
 			{/* Bottom progress bar as secondary indicator */}
 			<div className="dashboard__project-card-bar">
 				<ProgressBar
-					value={p.progress}
+					value={effectiveProgress}
 					color={
 						p.status === "At Risk"
 							? "orange"

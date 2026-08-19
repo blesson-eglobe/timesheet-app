@@ -27,22 +27,12 @@ const formatDashboardProject = (p: Record<string, unknown>) => {
 		progress = rawProgress > 0 && rawProgress < 1
 			? Math.round(rawProgress * 10) / 10
 			: Math.min(100, Math.round(rawProgress));
-	} else if (totalTasks > 0 && completedTasks > 0) {
-		// No budget but has completed/approved tasks — use task completion ratio
-		progressMode = "activity";
-		progress = Math.round((completedTasks / totalTasks) * 100);
 	} else if (loggedHours > 0) {
-		// No budget, no completed tasks, but hours are logged — activity-based
+		// No budget assigned: progress increases as timesheets/hours are added
 		progressMode = "activity";
-		if (totalTasks > 0 && approvedTasks > 0) {
-			// Use approved logs ratio as progress indicator
-			progress = Math.min(95, Math.round((approvedTasks / totalTasks) * 100));
-		} else if (dbProgress > 0) {
-			progress = dbProgress;
-		} else {
-			// Heuristic: give a base 5% for having any activity, scale with logged hours
-			progress = Math.min(95, Math.max(5, Math.round(loggedHours * 2)));
-		}
+		const hoursProgress = Math.min(95, Math.max(5, Math.round(loggedHours * 5)));
+		const taskProgress = totalTasks > 0 && completedTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+		progress = Math.max(dbProgress, hoursProgress, taskProgress);
 	} else {
 		progress = dbProgress;
 	}
